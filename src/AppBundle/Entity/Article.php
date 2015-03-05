@@ -4,6 +4,8 @@ namespace AppBundle\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
 use Doctrine\Common\Collections\ArrayCollection;
+use Symfony\Component\Validator\Constraints as Assert;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
 
 /**
  * Article
@@ -34,6 +36,8 @@ class Article
      * @var string
      *
      * @ORM\Column(name="titre", type="string", length=255, nullable=false)
+     * 
+     * @Assert\NotBlank(message="Merci de compléter le champ titre.")
      */
     private $titre;
 
@@ -41,6 +45,7 @@ class Article
      * @var \DateTime
      *
      * @ORM\Column(name="date", type="datetime", nullable=false)
+     * 
      */
     private $date;
 
@@ -55,6 +60,8 @@ class Article
      * @var string
      *
      * @ORM\Column(name="contenu", type="text", nullable=false)
+     * 
+     * @Assert\NotBlank(message="Merci de compléter le contenu.")
      */
     private $contenu;
 
@@ -182,5 +189,108 @@ class Article
     public function getBlog()
     {
         return $this->blog;
+    }
+    
+    // HELPER METHODS **********************************************************
+    
+    /**
+     * Chemin relatif vers le dossier uploads
+     * 
+     * @return string
+     *      Relative path.
+     */
+    protected function getUploadPath()
+    {
+        return 'uploads/images';
+    }
+    
+    /**
+     * Chemin absolu vers le dossier uploads
+     * 
+     * @return string
+     *      Absolute path.
+     */
+    protected function getUploadAbsolutePath()
+    {
+        return __DIR__.'/../../../web/'.$this->getUploadPath();
+    }
+    
+    /**
+     * Chemin relatif vers l'image Principale de l'article
+     * 
+     * @return NULL|string
+     *      Relative path.
+     */
+    public function getImagePrincipaleWeb()
+    {
+        return NULL === $this->getImagePrincipale()
+                ? NULL
+                : $this->getUploadPath().'/'.$this->getImagePrincipale();
+    }
+    
+    /**
+     * Chemin absolu vers l'image Principale de l'article
+     * 
+     * @return NULL|string
+     *      Absolute path.
+     */
+    public function getImagePrincipaleAbsolute()
+    {
+        return NULL === $this->getImagePrincipale()
+                ? NULL
+                : $this->getUploadAbsolutePath().'/'.$this->getImagePrincipale();
+    }
+    
+    /**
+     * Variable temporaire réservée à l'upload
+     * 
+     * @Assert\File(maxSize="1000000")
+     * @var type 
+     */
+    private $file;
+    
+    /**
+     * Sets file
+     * 
+     * @param \Symfony\Component\HttpFoundation\File\UploadedFile $file
+     */
+    public function setFile(UploadedFile $file = NULL)
+    {
+        $this->file = $file;
+    }
+    
+    /**
+     * Gets file
+     * 
+     * @return UploadedFile
+     */
+    public function getFile()
+    {
+        return $this->file;
+    }
+    
+    /**
+     * Upload une image principale d'un article     * 
+     */
+    public function upload(){
+        // File property can be empty
+        if($this->getFile() === NULL){
+            return;
+        }
+        
+        $filename = $this->getFile()->getClientOriginalName();
+        
+        // Move the uploaded file to target directory using original name.
+        $this->getFile()->move(
+                $this->getUploadAbsolutePath(),
+                $filename
+                );
+        
+        // Set the image principale
+        $this->setImagePrincipale($filename);
+        
+        // Cleanup
+        $this->setFile();
+        
     }
 }

@@ -15,11 +15,16 @@ class ArticleType extends AbstractType
     public function buildForm(FormBuilderInterface $builder, array $options)
     {
         $builder
-            ->add('titre')
+            ->add('titre', 'text', array(
+                'required' => TRUE,
+            ))
             ->add('date')
-            ->add('imagePrincipale')
+            ->add('file')
             ->add('contenu')
-            ->add('blog')
+            ->add('blog', 'entity', array(
+                'required' => TRUE,
+                'class' => 'AppBundle:Blog'
+            ))
         ;
     }
     

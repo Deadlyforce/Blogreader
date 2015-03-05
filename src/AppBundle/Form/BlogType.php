@@ -15,11 +15,15 @@ class BlogType extends AbstractType
     public function buildForm(FormBuilderInterface $builder, array $options)
     {
         $builder
-            ->add('nom')
-            ->add('plateforme')
-            ->add('url')
-            ->add('categorie')
-            ->add('auteur')
+            ->add('nom', 'text', array(
+                'required' => TRUE
+            ))
+            ->add('plateforme', 'text')
+            ->add('url', 'text', array(
+                'required' => TRUE
+            ))
+            ->add('categorie', 'text')
+            ->add('auteur', 'text')
             ->add('logo')
         ;
     }

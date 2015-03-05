@@ -258,4 +258,14 @@ class Blog
     {
         return $this->articles;
     }
+    
+    /**
+     * Return a blog as a string
+     * 
+     * @return string
+     */
+    public function __toString()
+    {
+        return $this->getNom();
+    }
 }

@@ -3,11 +3,28 @@
     <head>
         <meta charset="UTF-8" />
         <title>{% block title %}Welcome!{% endblock %}</title>
-        {% block stylesheets %}{% endblock %}
+        {% block stylesheets %}
+            {% stylesheets filter='cssrewrite'
+                '%kernel.root_dir%/../vendor/twbs/bootstrap/dist/css/bootstrap.css'
+                '%kernel.root_dir%/../vendor/twbs/bootstrap/dist/css/bootstrap-theme.css'
+                '@AppBundle/Resources/public/css/custom.css'                
+            %}
+                <link rel="stylesheet" href="{{ asset_url }}" />
+            {% endstylesheets %}
+        {% endblock %}
         <link rel="icon" type="image/x-icon" href="{{ asset('favicon.ico') }}" />
     </head>
     <body>
-        {% block body %}{% endblock %}
-        {% block javascripts %}{% endblock %}
+        <div class="container">
+            {% block body %}{% endblock %}
+        </div>
+        {% block javascripts %}
+            {% javascripts 
+                '%kernel.root_dir%/../vendor/components/jquery/jquery.js'
+                '%kernel.root_dir%/../vendor/twbs/bootstrpa/dist/js/bootstrap.js'
+            %}
+                <script src="{{ asset_url }}"></script>
+            {% endjavascripts %}
+        {% endblock %}
     </body>
 </html>

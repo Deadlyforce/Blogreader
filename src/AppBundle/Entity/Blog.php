@@ -4,12 +4,15 @@ namespace AppBundle\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
 use Doctrine\Common\Collections\ArrayCollection;
+use Symfony\Component\Validator\Constraints as Assert;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
 
 /**
  * Blog
  *
  * @ORM\Table(name="blogs")
  * @ORM\Entity(repositoryClass="AppBundle\Entity\BlogRepository")
+ * @ORM\HasLifecycleCallbacks
  */
 class Blog
 {
@@ -71,9 +74,15 @@ class Blog
      */
     private $logo;
     
+    /**
+     * Contient temporairement le chemin du logo ($logo)
+     * 
+     * @var string 
+     */
+    private $temp;
     
-    
-    public function __construct(){        
+    public function __construct()
+    {        
         $this->articles = new ArrayCollection();
     }
 
@@ -267,5 +276,161 @@ class Blog
     public function __toString()
     {
         return $this->getNom();
+    }
+    
+    // HELPER METHODS **********************************************************
+    
+    /**
+     * Chemin relatif vers le dossier uploads
+     * 
+     * @return string
+     *      Relative path.
+     */
+    protected function getUploadPath()
+    {
+        return 'uploads/blog_logo';
+    }
+    
+    /**
+     * Chemin absolu vers le dossier uploads
+     * 
+     * @return string
+     *      Absolute path.
+     */
+    protected function getUploadAbsolutePath()
+    {
+        return __DIR__.'/../../../web/'.$this->getUploadPath();
+    }
+    
+    /**
+     * Chemin relatif vers le logo du blog
+     * 
+     * @return NULL|string
+     *      Relative path.
+     */
+    public function getLogoWeb()
+    {
+        return NULL === $this->getLogo()
+                ? NULL
+                : $this->getUploadPath().'/'.$this->getLogo();
+    }
+    
+    /**
+     * Chemin absolu vers le logo du blog
+     * 
+     * @return NULL|string
+     *      Absolute path.
+     */
+    public function getLogoAbsolute()
+    {
+        return NULL === $this->getLogo()
+                ? NULL
+                : $this->getUploadAbsolutePath().'/'.$this->getLogo();
+    }
+    
+    /**
+     * Variable temporaire réservée à l'upload
+     * 
+     * @Assert\File(maxSize="1000000")
+     * @var type 
+     */
+    private $file;
+    
+//    /**
+//     * Sets file
+//     * 
+//     * @param \Symfony\Component\HttpFoundation\File\UploadedFile $file
+//     */
+//    public function setFile(UploadedFile $file = NULL)
+//    {
+//        $this->file = $file;
+//    }
+    
+    /**
+     * Sets file
+     * 
+     * @param \Symfony\Component\HttpFoundation\File\UploadedFile $file
+     */
+    public function setFile(UploadedFile $file = NULL)
+    {
+        $this->file = $file;
+        
+        // check if we have an old image path
+        if(isset($this->logo)){
+            // store the old name to delete after the update
+            $this->temp = $this->logo;
+            $this->logo = NULL;
+        }else{
+            $this->logo = 'initial';
+        }
+    }
+    
+    /**
+     * Gets file
+     * 
+     * @return UploadedFile
+     */
+    public function getFile()
+    {
+        return $this->file;
+    }
+    
+    /**
+     * Si le fichier à uploader existe, charger la variable logo avec un nom unique
+     * 
+     * @ORM\PrePersist()
+     * @ORM\PreUpdate()
+     */
+    public function preUpload()
+    {        
+        if(NULL !== $this->getFile()){
+            // Generate unique name
+            $filename = sha1(uniqid(mt_rand(), TRUE));
+            $extension = $this->getFile()->guessExtension();
+            $this->logo = $filename.'.'.$extension;
+        }
+    }
+    
+    /**
+     * Upload le logo d'un blog
+     * 
+     * @ORM\PostPersist()
+     * @ORM\PostUpdate() 
+     */
+    public function upload()
+    {
+        // File property can be empty
+        if($this->getFile() === NULL)
+        {
+            return;
+        }
+        
+        // if there is an error when moving the file, an exception will
+        // be automatically thrown by move(). This will properly prevent
+        // the entity from being persisted to the database on error
+        
+        $this->getFile()->move($this->getUploadAbsolutePath(), $this->logo);
+        
+        // Check if we have an old image
+        if(isset($this->temp)){
+            // delete the old image
+            unlink($this->getUploadAbsolutePath().'/'.$this->temp);
+            // Clear the temp image path
+            $this->temp = NULL;
+        }
+                   
+        // Cleanup
+        $this->file = NULL;        
+    }
+    
+    /**
+     * @ORM\PostRemove
+     */
+    public function removeUpload()
+    {
+        $file = $this->getLogoAbsolute();
+        if($file){
+            unlink($file);
+        }
     }
 }

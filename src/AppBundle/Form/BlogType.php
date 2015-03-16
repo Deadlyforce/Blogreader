@@ -18,13 +18,15 @@ class BlogType extends AbstractType
             ->add('nom', 'text', array(
                 'required' => TRUE
             ))
-            ->add('plateforme', 'text')
+            ->add('plateforme', 'text', array(
+                'required' => FALSE
+            ))
             ->add('url', 'text', array(
                 'required' => TRUE
             ))
             ->add('categorie', 'text')
             ->add('auteur', 'text')
-            ->add('logo')
+            ->add('file')
         ;
     }
     

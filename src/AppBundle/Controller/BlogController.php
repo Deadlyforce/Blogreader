@@ -9,6 +9,8 @@ use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Template;
 use AppBundle\Entity\Blog;
 use AppBundle\Form\BlogType;
+use Symfony\Component\Security\Core\Exception\AccessDeniedException;
+
 
 /**
  * Blog controller.
@@ -35,6 +37,7 @@ class BlogController extends Controller
             'entities' => $entities,
         );
     }
+    
     /**
      * Creates a new Blog entity.
      *
@@ -49,6 +52,7 @@ class BlogController extends Controller
         $form->handleRequest($request);
 
         if ($form->isValid()) {
+//            $entity->upload();
             $em = $this->getDoctrine()->getManager();
             $em->persist($entity);
             $em->flush();
@@ -79,6 +83,59 @@ class BlogController extends Controller
         $form->add('submit', 'submit', array('label' => 'Create'));
 
         return $form;
+    }
+    
+    /**
+     * Parcours le site concerné
+     * 
+     * @Route("/crawl", name="blog_crawl")
+     * @Template()
+     */
+    public function crawlAction($url = 'http://markmanson.net/')
+    {               
+        // Au lieu de créer une instance de la classe MyCrawler, je l'appelle en tant que service (config.yml)
+        $crawl = $this->get('my_crawler');
+
+        $crawl->setURL($url);
+        
+        // Analyse la balise content-type du document, autorise les pages de type text/html
+        $crawl->addContentTypeReceiveRule("#text/html#"); 
+        
+        // Filtre les url trouvées dans la page en question - ici on garde les pages html uniquement
+        $crawl->addURLFilterRule("#(jpg|gif|png|pdf|jpeg|svg|css|js)$# i"); 
+        
+        $crawl->enableCookieHandling(TRUE);
+        
+        $crawl->setTrafficLimit(1000 * 1024);
+        $crawl->setRequestLimit(18);
+        
+        // Sets the content-size-limit for content the crawler should receive from documents.
+        $crawl->setContentSizeLimit(0);
+        
+        // Sets the timeout in seconds for waiting for data on an established server-connection.
+        $crawl->setStreamTimeout(5);
+        
+        // Sets the timeout in seconds for connection tries to hosting webservers.
+        $crawl->setConnectionTimeout(10);
+        
+        $crawl->obeyRobotsTxt(TRUE);
+        $crawl->setUserAgentString("Mozilla/5.0 (Windows NT 6.3; rv:36.0) Gecko/20100101 Firefox/36.0");
+      
+        $crawl->go();
+        
+        // At the end, after the process is finished, we print a short 
+        // report (see method getProcessReport() for more information) 
+        $report = $crawl->getProcessReport(); 
+        
+        echo "Summary:".'<br/>'; 
+        echo "Links followed: ".$report->links_followed.'<br/>'; 
+        echo "Documents received: ".$report->files_received.'<br/>'; 
+        echo "Bytes received: ".$report->bytes_received." bytes".'<br/>'; 
+        echo "Process runtime: ".$report->process_runtime." sec".'<br/>';
+        
+        return array(
+            'caca' => 'youpi'
+        );
     }
 
     /**
@@ -169,6 +226,7 @@ class BlogController extends Controller
 
         return $form;
     }
+    
     /**
      * Edits an existing Blog entity.
      *
@@ -191,6 +249,7 @@ class BlogController extends Controller
         $editForm->handleRequest($request);
 
         if ($editForm->isValid()) {
+//            $entity->upload();
             $em->flush();
 
             return $this->redirect($this->generateUrl('blog_edit', array('id' => $id)));
@@ -202,6 +261,7 @@ class BlogController extends Controller
             'delete_form' => $deleteForm->createView(),
         );
     }
+    
     /**
      * Deletes a Blog entity.
      *
@@ -240,8 +300,9 @@ class BlogController extends Controller
         return $this->createFormBuilder()
             ->setAction($this->generateUrl('blog_delete', array('id' => $id)))
             ->setMethod('DELETE')
-            ->add('submit', 'submit', array('label' => 'Delete'))
+            ->add('submit', 'submit', array('label' => 'Supprimer ce blog'))
             ->getForm()
         ;
-    }
+    }   
+    
 }

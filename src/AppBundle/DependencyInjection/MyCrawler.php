@@ -18,9 +18,7 @@ class MyCrawler extends PHPCrawler{
      * @param PHPCrawlerDocumentInfo $pageInfo
      */
     public function handleDocumentInfo(PHPCrawlerDocumentInfo $pageInfo)
-    {
-//        $resultat = array();        
-        
+    {                
         $page_url = $pageInfo->url;        
         $source = $pageInfo->source;
         $status = $pageInfo->http_status_code;
@@ -28,10 +26,8 @@ class MyCrawler extends PHPCrawler{
         // Si page "OK" (pas de code erreur) et non vide, affiche l'url
         if($status == 200 && $source!=''){
             echo $page_url.'<br/>';
-            
-//            $this->resultat[] = $page_url;          
+          
             flush();            
         }
-               
     }    
 }

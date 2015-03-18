@@ -1,0 +1,43 @@
+{% extends '::base.html.twig' %}
+{% block title %}Liste des blogs{% endblock %}
+
+{% block body -%}
+    <h1>Blog list</h1>
+
+    <table class="records_list table">
+        <thead>
+            <tr>
+                <th>Id</th>
+                <th>Nom</th>
+                <th>Plateforme</th>
+                <th>Url</th>
+                <th>Categorie</th>
+                <th>Auteur</th>
+                <th>Logo</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for entity in entities %}
+            <tr>
+                <td><a href="{{ path('blog_show', { 'id': entity.id }) }}">{{ entity.id }}</a></td>
+                <td>{{ entity.nom }}</td>
+                <td>{{ entity.plateforme }}</td>
+                <td>{{ entity.url }}</td>
+                <td>{{ entity.categorie }}</td>
+                <td>{{ entity.auteur }}</td>
+                <td class="blog_logo">{% if entity.logo %}<img src="{{ asset(entity.getLogoWeb) }}" />{% endif %}</td>
+                <td>                
+                    <a href="{{ path('blog_show', { 'id': entity.id }) }}">voir</a>
+                    <a href="{{ path('blog_edit', { 'id': entity.id }) }}">modifier</a>                    
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+        
+    <a href="{{ path('blog_new') }}">
+        Ajouter un blog
+    </a>
+
+{% endblock %}

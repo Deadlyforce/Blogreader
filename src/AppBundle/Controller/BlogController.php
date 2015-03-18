@@ -91,7 +91,7 @@ class BlogController extends Controller
      * @Route("/crawl", name="blog_crawl")
      * @Template()
      */
-    public function crawlAction($url = 'http://markmanson.net/')
+    public function crawlAction($url = 'http://markmanson.net')
     {               
         // Au lieu de créer une instance de la classe MyCrawler, je l'appelle en tant que service (config.yml)
         $crawl = $this->get('my_crawler');
@@ -106,17 +106,20 @@ class BlogController extends Controller
         
         $crawl->enableCookieHandling(TRUE);
         
-        $crawl->setTrafficLimit(1000 * 1024);
+        // Sets a limit to the number of bytes the crawler should receive alltogether during crawling-process.
+        $crawl->setTrafficLimit(0);
+        
+        // Sets a limit to the total number of requests the crawler should execute.
         $crawl->setRequestLimit(18);
         
         // Sets the content-size-limit for content the crawler should receive from documents.
         $crawl->setContentSizeLimit(0);
         
         // Sets the timeout in seconds for waiting for data on an established server-connection.
-        $crawl->setStreamTimeout(5);
+        $crawl->setStreamTimeout(20);
         
         // Sets the timeout in seconds for connection tries to hosting webservers.
-        $crawl->setConnectionTimeout(10);
+        $crawl->setConnectionTimeout(20);
         
         $crawl->obeyRobotsTxt(TRUE);
         $crawl->setUserAgentString("Mozilla/5.0 (Windows NT 6.3; rv:36.0) Gecko/20100101 Firefox/36.0");
@@ -132,9 +135,11 @@ class BlogController extends Controller
         echo "Documents received: ".$report->files_received.'<br/>'; 
         echo "Bytes received: ".$report->bytes_received." bytes".'<br/>'; 
         echo "Process runtime: ".$report->process_runtime." sec".'<br/>';
+        echo "Abort reason: ".$report->abort_reason.'<br/>';
+        
         
         return array(
-            'caca' => 'youpi'
+            'varstuff' => 'something'
         );
     }
 

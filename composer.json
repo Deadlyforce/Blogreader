@@ -22,7 +22,8 @@
         
         "twbs/bootstrap": "3.3.*",
         "components/jquery": "2.1.*",
-        "mmerian/phpcrawl": "dev-master"
+        "mmerian/phpcrawl": "dev-master",
+        "phpunit/phpunit": "4.7.*@dev"
     },
     "require-dev": {
         "sensio/generator-bundle": "~2.3"

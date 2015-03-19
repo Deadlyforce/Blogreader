@@ -3,9 +3,8 @@
 
 {% block body -%}
     <h1>Résultat du crawler</h1>
-
-    {{ varstuff }}
-
     
-
+    {% for url in urls %}
+        {{ url }}<br/>
+    {% endfor %}
 {% endblock %}

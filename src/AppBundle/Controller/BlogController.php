@@ -104,22 +104,35 @@ class BlogController extends Controller
         // Filtre les url trouvées dans la page en question - ici on garde les pages html uniquement
         $crawl->addURLFilterRule("#(jpg|gif|png|pdf|jpeg|svg|css|js)$# i"); 
         
+        // Vire les url qui contiennent les chaînes suivantes: /forum/ ou /affiliates/ ou /register/ ou -course ou archive? ou /excerpts/ ou /books/
+        // ou /subscribe ou /privacy-policy ou /terms-and-conditions
+        $crawl->addURLFilterRule("#(\/forum\/|\/affiliates\/|\/register\/|\-course|archive\?|\/excerpts\/|\/books\/|\/subscribe|\/privacy\-policy|\/terms\-and\-conditions)# i"); 
+        
         $crawl->enableCookieHandling(TRUE);
         
         // Sets a limit to the number of bytes the crawler should receive alltogether during crawling-process.
         $crawl->setTrafficLimit(0);
         
         // Sets a limit to the total number of requests the crawler should execute.
-        $crawl->setRequestLimit(18);
+//        $crawl->setRequestLimit(50);
         
         // Sets the content-size-limit for content the crawler should receive from documents.
         $crawl->setContentSizeLimit(0);
+        
+        // 2 - The crawler will only follow links that lead to the same host like the one in the root-url.
+        // E.g. if the root-url (setURL()) is "http://www.foo.com", the crawler will ONLY follow links to "http://www.foo.com/...", but not
+        // to "http://bar.foo.com/..." and "http://www.another-domain.com/...". This is the default mode.
+        $crawl->setFollowMode(2);
         
         // Sets the timeout in seconds for waiting for data on an established server-connection.
         $crawl->setStreamTimeout(20);
         
         // Sets the timeout in seconds for connection tries to hosting webservers.
         $crawl->setConnectionTimeout(20);
+        
+        // For instance: If the maximum depth is set to 1, the crawler only will follow links found in the entry-page
+        // of the crawling-process, but won't follow any further links found in underlying documents.
+        $crawl->setCrawlingDepthLimit(1);
         
         $crawl->obeyRobotsTxt(TRUE);
         $crawl->setUserAgentString("Mozilla/5.0 (Windows NT 6.3; rv:36.0) Gecko/20100101 Firefox/36.0");
@@ -136,10 +149,9 @@ class BlogController extends Controller
         echo "Bytes received: ".$report->bytes_received." bytes".'<br/>'; 
         echo "Process runtime: ".$report->process_runtime." sec".'<br/>';
         echo "Abort reason: ".$report->abort_reason.'<br/>';
-        
-        
+
         return array(
-            'varstuff' => 'something'
+            'urls' => $crawl->result
         );
     }
 

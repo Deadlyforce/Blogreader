@@ -1,10 +1,11 @@
 <?php
 namespace AppBundle\DependencyInjection;
 
-set_time_limit(480);
+set_time_limit(3600);
 
 use PHPCrawler;
 use PHPCrawlerDocumentInfo;
+use PHPCrawlerResponseHeader;
 
 /**
  * Description of MyCrawler
@@ -14,6 +15,16 @@ use PHPCrawlerDocumentInfo;
 class MyCrawler extends PHPCrawler{          
     
     public $result = array();
+    
+    /**
+     * Overridable method that will be called after the header of a document was received and BEFORE the content will be received
+     *  
+     * @param PHPCrawlerResponseHeader $header
+     */
+    public function handleHeaderInfo(PHPCrawlerResponseHeader $header) 
+    {
+//var_dump($header);
+    }
     
     /**
      * Récupère les infos d'une url
@@ -28,10 +39,11 @@ class MyCrawler extends PHPCrawler{
         
         // Si page "OK" (pas de code erreur) et non vide, affiche l'url
         if($status == 200 && $source!='')
-        {            
+        {                                   
             echo $page_url.'<br/>';            
-            $this->result[] = $page_url;
-            
+//            echo "Links found: " . count($pageInfo->links_found_url_descriptors) .'<br/>'; 
+
+            $this->result[] = $page_url;            
             flush();            
         }      
     }    

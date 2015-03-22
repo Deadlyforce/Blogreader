@@ -4,7 +4,7 @@
         "Read more about it at http://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "hash": "971d3f6ee5a0b35983de8a6c05415599",
+    "hash": "247d6917435a95b1067b3ce066f601f5",
     "packages": [
         {
             "name": "components/jquery",
@@ -853,6 +853,124 @@
             "time": "2014-01-12 16:20:24"
         },
         {
+            "name": "knplabs/knp-menu",
+            "version": "v2.0.1",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/KnpLabs/KnpMenu.git",
+                "reference": "5758d0026d7ed00c8dd4727e413918cf2dc74c1a"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/KnpLabs/KnpMenu/zipball/5758d0026d7ed00c8dd4727e413918cf2dc74c1a",
+                "reference": "5758d0026d7ed00c8dd4727e413918cf2dc74c1a",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=5.3.0"
+            },
+            "require-dev": {
+                "pimple/pimple": "1.0.*",
+                "silex/silex": "1.0.*",
+                "twig/twig": ">=1.2,<2.0-dev"
+            },
+            "suggest": {
+                "pimple/pimple": "for the built-in implementations of the menu provider and renderer provider",
+                "silex/silex": "for the integration with your silex application",
+                "twig/twig": "for the TwigRenderer and the integration with your templates"
+            },
+            "type": "library",
+            "extra": {
+                "branch-alias": {
+                    "dev-master": "2.0.x-dev"
+                }
+            },
+            "autoload": {
+                "psr-0": {
+                    "Knp\\Menu\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Christophe Coevoet",
+                    "email": "stof@notk.org"
+                },
+                {
+                    "name": "KnpLabs",
+                    "homepage": "http://knplabs.com"
+                },
+                {
+                    "name": "Symfony Community",
+                    "homepage": "https://github.com/KnpLabs/KnpMenu/contributors"
+                }
+            ],
+            "description": "An object oriented menu library",
+            "homepage": "http://knplabs.com",
+            "keywords": [
+                "menu",
+                "tree"
+            ],
+            "time": "2014-08-01 09:50:16"
+        },
+        {
+            "name": "knplabs/knp-menu-bundle",
+            "version": "v2.0.0",
+            "target-dir": "Knp/Bundle/MenuBundle",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/KnpLabs/KnpMenuBundle.git",
+                "reference": "bdfc95da5ff7e4e67f948aaa9ea5da835a3a9088"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/KnpLabs/KnpMenuBundle/zipball/bdfc95da5ff7e4e67f948aaa9ea5da835a3a9088",
+                "reference": "bdfc95da5ff7e4e67f948aaa9ea5da835a3a9088",
+                "shasum": ""
+            },
+            "require": {
+                "knplabs/knp-menu": "~2.0",
+                "symfony/framework-bundle": "~2.0"
+            },
+            "type": "symfony-bundle",
+            "extra": {
+                "branch-alias": {
+                    "dev-master": "2.0.x-dev"
+                }
+            },
+            "autoload": {
+                "psr-0": {
+                    "Knp\\Bundle\\MenuBundle": ""
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Christophe Coevoet",
+                    "email": "stof@notk.org"
+                },
+                {
+                    "name": "Knplabs",
+                    "homepage": "http://knplabs.com"
+                },
+                {
+                    "name": "Symfony Community",
+                    "homepage": "https://github.com/KnpLabs/KnpMenuBundle/contributors"
+                }
+            ],
+            "description": "This bundle provides an integration of the KnpMenu library",
+            "keywords": [
+                "menu"
+            ],
+            "time": "2014-08-01 09:57:23"
+        },
+        {
             "name": "kriswallsmith/assetic",
             "version": "v1.2.1",
             "source": {
@@ -1407,6 +1525,68 @@
             "time": "2015-01-04 20:21:17"
         },
         {
+            "name": "symfony/serializer",
+            "version": "dev-master",
+            "target-dir": "Symfony/Component/Serializer",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/symfony/Serializer.git",
+                "reference": "c69f56c3e5cf921144b7dadb80f84f342ecd0086"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/symfony/Serializer/zipball/c69f56c3e5cf921144b7dadb80f84f342ecd0086",
+                "reference": "c69f56c3e5cf921144b7dadb80f84f342ecd0086",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=5.5.9"
+            },
+            "require-dev": {
+                "doctrine/annotations": "~1.0",
+                "doctrine/cache": "~1.0",
+                "symfony/config": "~2.7|~3.0",
+                "symfony/phpunit-bridge": "~2.7|~3.0",
+                "symfony/property-access": "~2.7|~3.0.0",
+                "symfony/yaml": "~2.7|~3.0"
+            },
+            "suggest": {
+                "doctrine/annotations": "For using the annotation mapping. You will also need doctrine/cache.",
+                "doctrine/cache": "For using the default cached annotation reader and metadata cache.",
+                "symfony/config": "For using the XML mapping loader.",
+                "symfony/property-access": "For using the ObjectNormalizer.",
+                "symfony/yaml": "For using the default YAML mapping loader."
+            },
+            "type": "library",
+            "extra": {
+                "branch-alias": {
+                    "dev-master": "3.0-dev"
+                }
+            },
+            "autoload": {
+                "psr-0": {
+                    "Symfony\\Component\\Serializer\\": ""
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Symfony Community",
+                    "homepage": "http://symfony.com/contributors"
+                },
+                {
+                    "name": "Fabien Potencier",
+                    "email": "fabien@symfony.com"
+                }
+            ],
+            "description": "Symfony Serializer Component",
+            "homepage": "http://symfony.com",
+            "time": "2015-03-17 12:50:12"
+        },
+        {
             "name": "symfony/swiftmailer-bundle",
             "version": "v2.3.8",
             "source": {
@@ -1794,7 +1974,8 @@
     "aliases": [],
     "minimum-stability": "stable",
     "stability-flags": {
-        "mmerian/phpcrawl": 20
+        "mmerian/phpcrawl": 20,
+        "symfony/serializer": 20
     },
     "prefer-stable": false,
     "prefer-lowest": false,

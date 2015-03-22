@@ -9,8 +9,12 @@ use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Template;
 use AppBundle\Entity\Blog;
 use AppBundle\Form\BlogType;
+
 use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 
+use Symfony\Component\Serializer\Serializer;
+use Symfony\Component\Serializer\Encoder\JsonEncoder;
+use Symfony\Component\Serializer\Normalizer\GetSetMethodNormalizer;
 
 /**
  * Blog controller.
@@ -18,8 +22,7 @@ use Symfony\Component\Security\Core\Exception\AccessDeniedException;
  * @Route("/blog")
  */
 class BlogController extends Controller
-{
-
+{       
     /**
      * Lists all Blog entities.
      *
@@ -88,11 +91,21 @@ class BlogController extends Controller
     /**
      * Parcours le site concerné
      * 
-     * @Route("/crawl", name="blog_crawl")
+     * @Route("/crawl/{id}", name="blog_crawl")
      * @Template()
      */
-    public function crawlAction($url = 'http://markmanson.net')
-    {               
+    public function crawlAction($id)
+    {                     
+        // Récupérer l'url de l'entité avec l'id de l'entité blog
+        $em = $this->getDoctrine()->getManager();
+        $blog = $em->getRepository('AppBundle:Blog')->find($id);
+        
+        if(!$blog){
+            throw $this->createNotFoundException('Impossible de trouver l\'entité blog demandée');            
+        }
+        
+        $url = $blog->getUrl();
+        
         // Au lieu de créer une instance de la classe MyCrawler, je l'appelle en tant que service (config.yml)
         $crawl = $this->get('my_crawler');
 
@@ -103,10 +116,11 @@ class BlogController extends Controller
         
         // Filtre les url trouvées dans la page en question - ici on garde les pages html uniquement
         $crawl->addURLFilterRule("#(jpg|gif|png|pdf|jpeg|svg|css|js)$# i"); 
-        
-        // Vire les url qui contiennent les chaînes suivantes: /forum/ ou /affiliates/ ou /register/ ou -course ou archive? ou /excerpts/ ou /books/
-        // ou /subscribe ou /privacy-policy ou /terms-and-conditions
-        $crawl->addURLFilterRule("#(\/forum\/|\/affiliates\/|\/register\/|\-course|archive\?|\/excerpts\/|\/books\/|\/subscribe|\/privacy\-policy|\/terms\-and\-conditions)# i"); 
+        // Vire les url qui contiennent les chaînes suivantes: /forum/, /affiliates/, /register/, -course, archive?, /excerpts/, /books/
+        // /subscribe, /privacy-policy, /terms-and-conditions, /search/, /search?, ?comment
+        $crawl->addURLFilterRule("#(\/forum\/|\/affiliates\/|\/register\/|\-course|archive\?|\/excerpts\/|\/books\/|\/subscribe|\/privacy\-policy|\/terms\-and\-conditions|\/search\/|\/search\?|\?comment)# i");        
+        // Vire les url qui contiennent les chaînes suivantes en fin de d'url : /contact, /books, /downloads, /archive
+        $crawl->addURLFilterRule("#(\/contact|\/books|\/downloads|\/archive|\/about)$# i");
         
         $crawl->enableCookieHandling(TRUE);
         
@@ -132,26 +146,29 @@ class BlogController extends Controller
         
         // For instance: If the maximum depth is set to 1, the crawler only will follow links found in the entry-page
         // of the crawling-process, but won't follow any further links found in underlying documents.
-        $crawl->setCrawlingDepthLimit(1);
+//        $crawl->setCrawlingDepthLimit(3);
         
         $crawl->obeyRobotsTxt(TRUE);
         $crawl->setUserAgentString("Mozilla/5.0 (Windows NT 6.3; rv:36.0) Gecko/20100101 Firefox/36.0");
       
         $crawl->go();
         
-        // At the end, after the process is finished, we print a short 
-        // report (see method getProcessReport() for more information) 
-        $report = $crawl->getProcessReport(); 
+        // Update de l'entité en BDD
+        $urls = $crawl->result;
         
-        echo "Summary:".'<br/>'; 
-        echo "Links followed: ".$report->links_followed.'<br/>'; 
-        echo "Documents received: ".$report->files_received.'<br/>'; 
-        echo "Bytes received: ".$report->bytes_received." bytes".'<br/>'; 
-        echo "Process runtime: ".$report->process_runtime." sec".'<br/>';
-        echo "Abort reason: ".$report->abort_reason.'<br/>';
+        $encoders = array(new JsonEncoder());
+        $normalizers = array(new GetSetMethodNormalizer());        
+        $serializer = new Serializer($normalizers, $encoders);
+        
+        $json_urls = $serializer->serialize($urls, 'json');
+        
+        $blog->setUrlList($json_urls);
+        $em->persist($blog);
+        $em->flush();
 
         return array(
-            'urls' => $crawl->result
+            'urls' => $urls,
+            'process_report' => $crawl->getProcessReport()
         );
     }
 
@@ -256,7 +273,7 @@ class BlogController extends Controller
         $em = $this->getDoctrine()->getManager();
 
         $entity = $em->getRepository('AppBundle:Blog')->find($id);
-
+        
         if (!$entity) {
             throw $this->createNotFoundException('Unable to find Blog entity.');
         }

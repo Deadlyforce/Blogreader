@@ -24,7 +24,9 @@ class BlogType extends AbstractType
             ->add('url', 'text', array(
                 'required' => TRUE
             ))
-            ->add('categorie', 'text')
+            ->add('categorie', 'text', array(
+                'required' => FALSE
+            ))
             ->add('auteur', 'text')
             ->add('file')
         ;

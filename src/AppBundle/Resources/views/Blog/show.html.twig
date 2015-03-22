@@ -38,12 +38,12 @@
     </table>
 
     <a href="{{ path('blog') }}">Retour à la liste</a><br/>
-    <a href="{{ path('blog_edit', { 'id': entity.id }) }}">Modifier</a>
+    <a href="{{ path('blog_edit', {'id': entity.id}) }}">Modifier</a>
 
     {{ form(delete_form) }}
     
     <h2>Actions</h2>
-    <a id="crawl_trigger" href="{{ path('blog_crawl') }}">Crawler</a>
+    <a id="crawl_trigger" href="{{ path('blog_crawl', {'id': entity.id}) }}">Crawler</a>
     
 {#<script type="text/javascript"> 
     

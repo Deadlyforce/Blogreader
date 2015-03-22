@@ -75,6 +75,13 @@ class Blog
     private $logo;
     
     /**
+     * @var json_array
+     * 
+     * @ORM\Column(name="url_list", type="json_array", nullable=true) 
+     */
+    private $url_list;
+    
+    /**
      * Contient temporairement le chemin du logo ($logo)
      * 
      * @var string 
@@ -232,8 +239,30 @@ class Blog
     public function getLogo()
     {
         return $this->logo;
-    }    
+    }
     
+    /**
+     * Set url_list
+     *
+     * @param json_array $url_list
+     * @return Blog
+     */
+    public function setUrlList($url_list)
+    {
+        $this->url_list = $url_list;
+
+        return $this;
+    }
+    
+    /**
+     * Get url_list
+     *
+     * @return json_array 
+     */
+    public function getUrlList()
+    {
+        return $this->url_list;
+    }
 
     /**
      * Add articles

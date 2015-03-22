@@ -18,7 +18,7 @@ class Article
     /**
      * @var Blog 
      * 
-     * @ORM\ManyToOne(targetEntity="Blog", inversedBy="Article")
+     * @ORM\ManyToOne(targetEntity="Blog", inversedBy="articles")
      * @ORM\JoinColumn(name="blog_id", referencedColumnName="id")
      */
     private $blog;

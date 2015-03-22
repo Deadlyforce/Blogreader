@@ -16,7 +16,9 @@
     </head>
     <body>
         <div class="container">
-            {% block body %}{% endblock %}
+            {{ knp_menu_render('AppBundle:Builder:mainMenu') }}
+            {% block body %}
+            {% endblock %}
         </div>
         {% block javascripts %}
             {% javascripts 

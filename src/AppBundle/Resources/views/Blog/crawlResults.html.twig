@@ -1,0 +1,9 @@
+{% extends '::base.html.twig' %}
+{% block title %}Blog crawler{% endblock %}
+
+{% block body %}
+    <h1>Résultat du crawler</h1>
+    
+    {{ render(controller('AppBundle:Blog:crawl', {'id': id, 'requestLimit': requestLimit })) }}
+    
+{% endblock %}

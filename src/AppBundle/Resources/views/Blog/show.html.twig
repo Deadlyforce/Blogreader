@@ -8,56 +8,34 @@
         <tbody>
             <tr>
                 <th>Id</th>
-                <td>{{ entity.id }}</td>
-            </tr>
-            <tr>
                 <th>Nom</th>
-                <td>{{ entity.nom }}</td>
-            </tr>
-            <tr>
                 <th>Plateforme</th>
-                <td>{{ entity.plateforme }}</td>
-            </tr>
-            <tr>
                 <th>Url</th>
-                <td>{{ entity.url }}</td>
-            </tr>
-            <tr>
                 <th>Categorie</th>
-                <td>{{ entity.categorie }}</td>
-            </tr>
-            <tr>
                 <th>Auteur</th>
-                <td>{{ entity.auteur }}</td>
+                <th>Logo</th>
             </tr>
             <tr>
-                <th>Logo</th>
-                <td class="blog_logo">{% if entity.logo %}<img src="{{ asset(entity.getLogoWeb) }}" />{% endif %}</td>
+                <td>{{ entity.id }}</td>                
+                <td>{{ entity.nom }}</td>
+                <td>{% if(entity.plateforme) %}{{ entity.plateforme }}{% else %}Indéfini{% endif %}</td>
+                <td>{{ entity.url }}</td>
+                <td>{{ entity.categorie }}</td>
+                <td>{{ entity.auteur }}</td>
+                <td class="blog_logo">{% if entity.logo %}<img src="{{ asset(entity.getLogoWeb) }}" />{% endif %}</td>            
             </tr>
         </tbody>
     </table>
 
-    <a href="{{ path('blog') }}">Retour à la liste</a><br/>
-    <a href="{{ path('blog_edit', {'id': entity.id}) }}">Modifier</a>
+{#    <a href="{{ path('blog') }}">Retour à la liste</a><br/>#}
+{#    <a href="{{ path('blog_edit', {'id': entity.id}) }}">Modifier</a>#}
 
-    {{ form(delete_form) }}
+{#    {{ form(delete_form) }}#}
     
-    <h2>Actions</h2>
-    <a id="crawl_trigger" href="{{ path('blog_crawl', {'id': entity.id}) }}">Crawler</a>
+    <h3>Actions</h3>
+    <a href="{{ path('blog_crawl_param_edit', {'id': entity.id}) }}">Paramétrer le crawler</a><br/>
+    <a href="{{ path('blog_crawl_results', {'id': entity.id}) }}">Crawler tout le site</a>
     
-{#<script type="text/javascript"> 
-    
-    var path = "{{ path('blog_crawl') }}";
-    
-    $(document).ready(function(){       
-        $('#crawl_trigger').click(
-            function(event){
-                $.get(path);
-                event.preventDefault();
-        });
-    });
-</script>#}
-
 {% endblock %}
 
 

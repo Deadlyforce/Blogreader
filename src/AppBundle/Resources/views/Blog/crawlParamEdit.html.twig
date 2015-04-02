@@ -1,0 +1,30 @@
+{% extends '::base.html.twig' %}
+{% block title %}Crawler parameters{% endblock %}
+
+{% block body -%}
+    <h1>Paramétrage du crawler</h1>
+    
+{#    {{ form(paramForm) }}#}
+
+    {{ form_start(paramForm) }}
+        <p>Nombre d'urls que le crawler va chercher: </p>
+        {{ form_row(paramForm.request_limit) }}
+    {{ form_end(paramForm) }}
+    
+    <a href='{{ path('blog_crawl_param_results', {'id': blog.id}) }}'>Tester le crawler</a>    
+    
+        
+    
+{#    {% for url in urls %}
+        {{ url }}<br/>       
+    {% endfor %}#}
+{#    <br/>
+    <fieldset>
+        Links followed: {{ process_report.links_followed }}<br/>
+        Documents received: {{ process_report.files_received }}<br/>
+        Bytes received: {{ process_report.bytes_received }} bytes.<br/>
+        Process runtime: {{ process_report.process_runtime }} sec.<br/>
+{#        Abort reason: {{ process_report.abort_reason }}<br/>        #}
+{#    </fieldset>
+    <br/>#}
+{% endblock %}

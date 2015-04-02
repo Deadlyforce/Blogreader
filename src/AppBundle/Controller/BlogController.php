@@ -9,12 +9,14 @@ use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Template;
 use AppBundle\Entity\Blog;
 use AppBundle\Form\BlogType;
+use AppBundle\Form\BlogParamType;
 
 use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 
 use Symfony\Component\Serializer\Serializer;
 use Symfony\Component\Serializer\Encoder\JsonEncoder;
 use Symfony\Component\Serializer\Normalizer\GetSetMethodNormalizer;
+
 
 /**
  * Blog controller.
@@ -52,8 +54,8 @@ class BlogController extends Controller
     {
         $entity = new Blog();
         $form = $this->createCreateForm($entity);
-        $form->handleRequest($request);
-
+        $form->handleRequest($request);         
+               
         if ($form->isValid()) {
 //            $entity->upload();
             $em = $this->getDoctrine()->getManager();
@@ -89,12 +91,129 @@ class BlogController extends Controller
     }
     
     /**
-     * Parcours le site concerné
+     * Paramétrage du crawler avec un échantillon d'urls
      * 
-     * @Route("/crawl/{id}", name="blog_crawl")
+     * @Route("/crawl_param/{id}/edit", name="blog_crawl_param_edit")
+     * @Method("GET")
      * @Template()
      */
-    public function crawlAction($id)
+    public function crawlParamEditAction($id)
+    {
+        $em = $this->getDoctrine()->getManager();
+        $blog = $em->getRepository('AppBundle:Blog')->find($id);
+        
+        if (!$blog) {
+            throw $this->createNotFoundException('Unable to find Blog entity.');
+        }
+       
+        $paramForm = $this->createParamForm($blog);
+                       
+        return array(
+            'paramForm' => $paramForm->createView(),
+            'blog' => $blog    
+        );
+        
+    }
+    
+    /**
+     * Update les paramètres de réglage du crawler
+     * 
+     * @param Request $request
+     * @param int $id
+     * 
+     * @Route("/crawl_param/{id}/update", name="blog_crawl_param_update")
+     * @Method("PUT")
+     * @Template("AppBundle:Blog:crawlParamEdit.html.twig")
+     */
+    public function crawlParamUpdateAction(Request $request, $id)
+    {
+        $em = $this->getDoctrine()->getManager();
+        $blog = $em->getRepository('AppBundle:Blog')->find($id);
+        
+        if (!$blog) {
+            throw $this->createNotFoundException('Unable to find Blog entity.');
+        }
+
+        $paramForm = $this->createParamForm($blog);
+        $paramForm->handleRequest($request);
+
+        if ($paramForm->isValid()) {
+
+            $em->flush();
+
+            return $this->redirect($this->generateUrl('blog_crawl_param_edit', array('id' => $id)));
+        }
+
+        return array(
+            'blog'      => $blog,
+            'param_form'   => $paramForm->createView()
+        );
+    }
+    
+    /**
+     * Creates a form to add parameters for the crawler settings
+     * 
+     * @param Blog $entity
+     */
+    public function createParamForm(Blog $entity)
+    {
+        $form = $this->createForm(new BlogParamType(), $entity, array(
+            'action' => $this->generateUrl('blog_crawl_param_update', array('id' => $entity->getId())),
+            'method' => 'PUT'
+        ));
+            
+        $form->add('submit', 'submit', array(
+            'label' => 'Save options'
+        ));
+        
+        return $form;
+    }
+    
+    /**
+     * Retourne les résultats du test de paramétrage
+     * 
+     * @Route("/{id}/crawl_param_results", name="blog_crawl_param_results")
+     * @Template()
+     */
+    public function crawlParamResultsAction($id)
+    {
+        $result = $this->crawlParamEditAction($id);
+        $blog = $result['blog'];
+        $paramForm = $result['paramForm'];
+        
+        $requestLimit = $blog->getRequestLimit();
+        
+        return array(
+            'id' => $id,
+            'requestLimit' => $requestLimit,
+            'paramForm' => $paramForm
+        );
+    }
+    
+    /**
+     * Parcours le site avec les réglages finaux du crawler
+     * Cette méthode rend le controleur crawlAction dans le template
+     * 
+     * @Route("/crawl/{id}", name="blog_crawl_results")
+     * @Template()
+     */
+    public function crawlResultsAction($id)
+    {
+        // Request Limit à 0 pour crawler la totalité des url du site après réglages
+        $requestLimit = 0;        
+        
+        return array(
+            'id' => $id,
+            'requestLimit' => $requestLimit
+        );
+    }
+       
+    /**
+     * Parcours le site concerné
+     *      
+     * @Template()
+     */
+    public function crawlAction($id, $requestLimit)
     {                     
         // Récupérer l'url de l'entité avec l'id de l'entité blog
         $em = $this->getDoctrine()->getManager();
@@ -114,13 +233,7 @@ class BlogController extends Controller
         // Analyse la balise content-type du document, autorise les pages de type text/html
         $crawl->addContentTypeReceiveRule("#text/html#"); 
         
-        // Filtre les url trouvées dans la page en question - ici on garde les pages html uniquement
-        $crawl->addURLFilterRule("#(jpg|gif|png|pdf|jpeg|svg|css|js)$# i"); 
-        // Vire les url qui contiennent les chaînes suivantes: /forum/, /affiliates/, /register/, -course, archive?, /excerpts/, /books/
-        // /subscribe, /privacy-policy, /terms-and-conditions, /search/, /search?, ?comment
-        $crawl->addURLFilterRule("#(\/forum\/|\/affiliates\/|\/register\/|\-course|archive\?|\/excerpts\/|\/books\/|\/subscribe|\/privacy\-policy|\/terms\-and\-conditions|\/search\/|\/search\?|\?comment)# i");        
-        // Vire les url qui contiennent les chaînes suivantes en fin de d'url : /contact, /books, /downloads, /archive
-        $crawl->addURLFilterRule("#(\/contact|\/books|\/downloads|\/archive|\/about)$# i");
+        $this->addURLFilterRules($crawl);
         
         $crawl->enableCookieHandling(TRUE);
         
@@ -128,7 +241,7 @@ class BlogController extends Controller
         $crawl->setTrafficLimit(0);
         
         // Sets a limit to the total number of requests the crawler should execute.
-//        $crawl->setRequestLimit(50);
+        $crawl->setRequestLimit($requestLimit);
         
         // Sets the content-size-limit for content the crawler should receive from documents.
         $crawl->setContentSizeLimit(0);
@@ -171,6 +284,32 @@ class BlogController extends Controller
             'process_report' => $crawl->getProcessReport()
         );
     }
+    
+    /**
+     * Etablit les règles de filtrage des url ramassées par le crawler
+     * 
+     * @param object $crawl
+     */
+    public function addURLFilterRules($crawl)
+    {
+        // Filtre les url trouvées dans la page en question - ici on garde les pages html uniquement
+        $crawl->addURLFilterRule("#(jpg|gif|png|pdf|jpeg|svg|css|js)$# i"); 
+        // Vire les url qui contiennent les chaînes suivantes: /forum/, /affiliates/, /register/, -course, archive?, /excerpts/, /books/
+        // /subscribe, /privacy-policy, /terms-and-conditions, /search/, /search?, ?comment
+        $crawl->addURLFilterRule("#(\/forum\/|\/affiliates\/|\/register\/|\-course|archive\?|\/excerpts\/|\/books\/|\/subscribe|\/privacy\-policy|\/terms\-and\-conditions|\/search\/|\/search\?|\?comment)# i");        
+        // Vire les url qui contiennent les chaînes suivantes en fin de d'url : /contact, /books, /downloads, /archive
+        $crawl->addURLFilterRule("#(\/contact|\/books|\/downloads|\/archive|\/about)$# i");
+        
+        // Règles spécifiques à Château-Heartiste - Wordpress platform (de base)
+        $crawl->addURLFilterRule("#(\/about\/|\/category\/|openidserver|replytocom|\/author\/|\?shared|\/page\/|\/alpha-assessment-submissions\/|\/beta-of-the-year-contest-submissions\/|dating\-market\-value\-test\-for)# i");
+        
+        // Règles spécifiques à The Rational Male - Wordpress (développé spécifiquement)
+        $crawl->addURLFilterRule("#(\/tag\/)# i");
+        $crawl->addURLFilterRule("#(\/the\-book\/|\/donate\/|\/the\-best\-of\-rational\-male\-year\-one\/)$# i");
+        
+        // Règles spécifiques à RooshV
+        $crawl->addURLFilterRule("#(cf\_action\=|doing\_wp\_cron|\%d|\/attachment\/|\/travel\/)# i");
+    }
 
     /**
      * Displays a form to create a new Blog entity.
@@ -200,18 +339,17 @@ class BlogController extends Controller
     public function showAction($id)
     {
         $em = $this->getDoctrine()->getManager();
-
         $entity = $em->getRepository('AppBundle:Blog')->find($id);
 
         if (!$entity) {
             throw $this->createNotFoundException('Unable to find Blog entity.');
         }
 
-        $deleteForm = $this->createDeleteForm($id);
+//        $deleteForm = $this->createDeleteForm($id);
 
         return array(
             'entity'      => $entity,
-            'delete_form' => $deleteForm->createView(),
+//            'delete_form' => $deleteForm->createView(),
         );
     }
 
@@ -225,7 +363,6 @@ class BlogController extends Controller
     public function editAction($id)
     {
         $em = $this->getDoctrine()->getManager();
-
         $entity = $em->getRepository('AppBundle:Blog')->find($id);
 
         if (!$entity) {
@@ -260,7 +397,7 @@ class BlogController extends Controller
 
         return $form;
     }
-    
+        
     /**
      * Edits an existing Blog entity.
      *
@@ -271,7 +408,6 @@ class BlogController extends Controller
     public function updateAction(Request $request, $id)
     {
         $em = $this->getDoctrine()->getManager();
-
         $entity = $em->getRepository('AppBundle:Blog')->find($id);
         
         if (!$entity) {
@@ -296,31 +432,31 @@ class BlogController extends Controller
         );
     }
     
-    /**
-     * Deletes a Blog entity.
-     *
-     * @Route("/{id}", name="blog_delete")
-     * @Method("DELETE")
-     */
-    public function deleteAction(Request $request, $id)
-    {
-        $form = $this->createDeleteForm($id);
-        $form->handleRequest($request);
-
-        if ($form->isValid()) {
-            $em = $this->getDoctrine()->getManager();
-            $entity = $em->getRepository('AppBundle:Blog')->find($id);
-
-            if (!$entity) {
-                throw $this->createNotFoundException('Unable to find Blog entity.');
-            }
-
-            $em->remove($entity);
-            $em->flush();
-        }
-
-        return $this->redirect($this->generateUrl('blog'));
-    }
+//    /**
+//     * Deletes a Blog entity.
+//     *
+//     * @Route("/{id}", name="blog_delete")
+//     * @Method("DELETE")
+//     */
+//    public function deleteAction(Request $request, $id)
+//    {
+//        $form = $this->createDeleteForm($id);
+//        $form->handleRequest($request);
+//
+//        if ($form->isValid()) {
+//            $em = $this->getDoctrine()->getManager();
+//            $entity = $em->getRepository('AppBundle:Blog')->find($id);
+//
+//            if (!$entity) {
+//                throw $this->createNotFoundException('Unable to find Blog entity.');
+//            }
+//
+//            $em->remove($entity);
+//            $em->flush();
+//        }
+//
+//        return $this->redirect($this->generateUrl('blog'));
+//    }
 
     /**
      * Creates a form to delete a Blog entity by id.
@@ -337,6 +473,26 @@ class BlogController extends Controller
             ->add('submit', 'submit', array('label' => 'Supprimer ce blog'))
             ->getForm()
         ;
-    }   
+    }
+    
+    /**
+     * Efface un blog
+     * 
+     * @Route("/{id}/delete", name="blog_delete")
+     */
+    public function deleteBlogAction($id)
+    {
+        $em = $this->getDoctrine()->getManager();
+        $blog = $em->getRepository('AppBundle:Blog')->find($id);
+        
+        if(!$blog){
+            throw $this->createNotFoundException('Unable to find Blog entity.');            
+        }
+        
+        $em->remove($blog);
+        $em->flush();
+        
+        return $this->redirect($this->generateUrl('blog'));
+    }
     
 }

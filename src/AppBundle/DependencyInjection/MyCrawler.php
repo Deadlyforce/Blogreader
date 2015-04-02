@@ -1,7 +1,8 @@
 <?php
 namespace AppBundle\DependencyInjection;
 
-set_time_limit(3600);
+// Autorisation de tourner 8h sans interruption pour le script
+set_time_limit(28800);
 
 use PHPCrawler;
 use PHPCrawlerDocumentInfo;

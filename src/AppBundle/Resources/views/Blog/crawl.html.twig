@@ -1,28 +1,16 @@
-{% extends '::base.html.twig' %}
-{% block title %}Blog crawler{% endblock %}
 
-{% block body -%}
-    <h1>Résultat du crawler</h1>
-    
-    {% for url in urls %}
-        {{ url }}<br/>       
-    {% endfor %}
-    <br/>
-    <fieldset>
-        Links followed: {{ process_report.links_followed }}<br/>
-        Documents received: {{ process_report.files_received }}<br/>
-        Bytes received: {{ process_report.bytes_received }} bytes.<br/>
-        Process runtime: {{ process_report.process_runtime }} sec.<br/>
-        Abort reason: {{ process_report.abort_reason }}<br/>        
-    </fieldset>
-    <br/>
-{% endblock %}
+{% for url in urls %}
+    {{ url }}<br/>       
+{% endfor %}
+<br/>
+<fieldset>
+    Links followed: {{ process_report.links_followed }}<br/>
+    Documents received: {{ process_report.files_received }}<br/>
+    Bytes received: {{ process_report.bytes_received }} bytes.<br/>
+    Process runtime: {{ process_report.process_runtime }} sec.<br/>
+{#        Abort reason: {{ process_report.abort_reason }}<br/>        #}
+</fieldset>
+<br/>
 
 
 
-{#echo "Summary:".'<br/>'; 
-        echo "Links followed: ".$report->links_followed.'<br/>'; 
-        echo "Documents received: ".$report->files_received.'<br/>'; 
-        echo "Bytes received: ".$report->bytes_received." bytes".'<br/>'; 
-        echo "Process runtime: ".$report->process_runtime." sec".'<br/>';
-        echo "Abort reason: ".$report->abort_reason.'<br/>';#}

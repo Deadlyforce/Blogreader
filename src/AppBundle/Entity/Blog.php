@@ -82,11 +82,21 @@ class Blog
     private $url_list;
     
     /**
+     * @var int
+     * 
+     * @ORM\Column(name="request_limit", type="integer", nullable=true)
+     */
+    private $request_limit;
+    
+    /**
      * Contient temporairement le chemin du logo ($logo)
      * 
      * @var string 
      */
     private $temp;
+    
+    
+    
     
     public function __construct()
     {        
@@ -262,6 +272,26 @@ class Blog
     public function getUrlList()
     {
         return $this->url_list;
+    }
+    
+    /**
+     * Sets request_limit
+     * 
+     * @param int $requestLimit
+     */
+    public function setRequestLimit($requestLimit)
+    {
+        $this->request_limit = $requestLimit;
+    }
+    
+    /**
+     * Get request_limit
+     * 
+     * @return int
+     */
+    public function getRequestLimit()
+    {
+        return $this->request_limit;
     }
 
     /**

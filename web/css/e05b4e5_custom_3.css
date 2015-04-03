@@ -1,0 +1,11 @@
+body{
+    padding-top: 25px;
+}
+
+.blog_logo img{
+    width: 150px;
+}
+
+.loading{
+    background: url("../../bundles/app/images/loading.gif") no-repeat left top;
+}

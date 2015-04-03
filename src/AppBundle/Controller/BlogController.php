@@ -107,10 +107,16 @@ class BlogController extends Controller
         }
        
         $paramForm = $this->createParamForm($blog);
-                       
+        
+//        // Initialisation des variables urls et processReport pour la vue
+//        $urls = array();
+//        $process_report = array();
+        
         return array(
             'paramForm' => $paramForm->createView(),
-            'blog' => $blog    
+            'blog' => $blog,
+//            'urls' => $urls,
+//            'process_report' => $process_report
         );
         
     }
@@ -170,27 +176,6 @@ class BlogController extends Controller
     }
     
     /**
-     * Retourne les résultats du test de paramétrage
-     * 
-     * @Route("/{id}/crawl_param_results", name="blog_crawl_param_results")
-     * @Template()
-     */
-    public function crawlParamResultsAction($id)
-    {
-        $result = $this->crawlParamEditAction($id);
-        $blog = $result['blog'];
-        $paramForm = $result['paramForm'];
-        
-        $requestLimit = $blog->getRequestLimit();
-        
-        return array(
-            'id' => $id,
-            'requestLimit' => $requestLimit,
-            'paramForm' => $paramForm
-        );
-    }
-    
-    /**
      * Parcours le site avec les réglages finaux du crawler
      * Cette méthode rend le controleur crawlAction dans le template
      * 
@@ -210,11 +195,12 @@ class BlogController extends Controller
        
     /**
      * Parcours le site concerné
-     *      
+     * 
+     * @Route("/crawl/{id}/{requestLimit}", name="blog_crawl")     
      * @Template()
      */
     public function crawlAction($id, $requestLimit)
-    {                     
+    {     
         // Récupérer l'url de l'entité avec l'id de l'entité blog
         $em = $this->getDoctrine()->getManager();
         $blog = $em->getRepository('AppBundle:Blog')->find($id);
@@ -268,20 +254,24 @@ class BlogController extends Controller
         
         // Update de l'entité en BDD
         $urls = $crawl->result;
+        $process_report = $crawl->getProcessReport();
         
-        $encoders = array(new JsonEncoder());
-        $normalizers = array(new GetSetMethodNormalizer());        
-        $serializer = new Serializer($normalizers, $encoders);
+//        $encoders = array(new JsonEncoder());
+//        $normalizers = array(new GetSetMethodNormalizer());        
+//        $serializer = new Serializer($normalizers, $encoders);
+//        
+//        $json_urls = $serializer->serialize($urls, 'json');
+//        
+//        $blog->setUrlList($json_urls);
+//        $em->persist($blog);
+//        $em->flush();
+       
         
-        $json_urls = $serializer->serialize($urls, 'json');
+//          return $this->render('AppBundle:Blog:crawl.html.twig', array('urls' => $urls, 'process_report' => $process_report));
         
-        $blog->setUrlList($json_urls);
-        $em->persist($blog);
-        $em->flush();
-
         return array(
             'urls' => $urls,
-            'process_report' => $crawl->getProcessReport()
+            'process_report' => $process_report
         );
     }
     

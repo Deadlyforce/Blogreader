@@ -9,19 +9,39 @@
     {{ form_start(paramForm, { 'attr': {'id': 'paramForm'}}) }}
         <p>Nombre d'urls que le crawler va chercher: </p>
         {{ form_row(paramForm.request_limit) }}
-    {{ form_end(paramForm) }}
-    
-    <br/>
-{#    <a href='{{ path('blog_crawl_param_results', {'id': blog.id}) }}'>Tester le crawler</a>    #}
+        
+        <p>Mots exclus des urls: </p>        
+        {{ form_row(paramForm.url_excluded_words) }}    
+        <input type="text" name="words" placeholder="Words" class="tm-input"/>
+{#        <input type="text" name="endwords" placeholder="EndWords" class="tm-input"/>#}
+    {{ form_end(paramForm) }}    
+    <br/><br/>
+
     <a id="crawl_test_button" href='#'>Tester le crawler</a><br/>    
     
-    <div class="loading">Work in progress</div>
+    <div class="loading"></div>
     <div id="crawl_results"></div>
     
     <script type="text/javascript">
-        $(document).ready(function(){
-            $(".loading").hide();
-
+        $(document).ready(function(){            
+            $(".loading").hide(); 
+           
+            // modifier la chaîne de caractères venant de la base pour préremplissage du tagManager
+            var savedWords = $("#blogParam_url_excluded_words").val();
+            savedWords = savedWords.split(",");
+     
+            // Tag Manager
+            $(".tm-input").tagsManager({
+                prefilled: savedWords
+            });
+            
+            // Transfère l'input du tagManager dans le champ hidden de mon formulaire
+            $("input[name='hidden-words']").change(function(){
+                var words = $("input[name='hidden-words']").val();                
+                $("#blogParam_url_excluded_words").val(words);
+            });            
+            
+            // Déclenche le crawler pour faire un test en ajax
             $('#crawl_test_button').click(function(){
                 $('.loading').show();
                 
@@ -40,7 +60,7 @@
                 });
 
                 return false;
-            });
+            });          
         });       
     </script>    
 

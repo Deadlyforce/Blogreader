@@ -101,22 +101,22 @@ class BlogController extends Controller
     {
         $em = $this->getDoctrine()->getManager();
         $blog = $em->getRepository('AppBundle:Blog')->find($id);
+
+        $words = $blog->getUrlExcludedWords();
+
+        $wordString = implode(',', json_decode($words));
+        $blog->setUrlExcludedWords($wordString);
+//var_dump($blog);
         
         if (!$blog) {
             throw $this->createNotFoundException('Unable to find Blog entity.');
         }
        
-        $paramForm = $this->createParamForm($blog);
-        
-//        // Initialisation des variables urls et processReport pour la vue
-//        $urls = array();
-//        $process_report = array();
+        $paramForm = $this->createParamForm($blog);        
         
         return array(
             'paramForm' => $paramForm->createView(),
-            'blog' => $blog,
-//            'urls' => $urls,
-//            'process_report' => $process_report
+            'blog' => $blog
         );
         
     }
@@ -141,6 +141,22 @@ class BlogController extends Controller
         }
 
         $paramForm = $this->createParamForm($blog);
+
+        // Transformation de la chaîne de mots clé en array
+        $encoders = array(new JsonEncoder());
+        $normalizers = array(new GetSetMethodNormalizer());        
+        $serializer = new Serializer($normalizers, $encoders);
+      
+        $requestArray = $request->request->get('blogParam');
+        
+        $wordsArray = explode(',', $requestArray['url_excluded_words']);
+        $json_wordsArray = $serializer->serialize($wordsArray, 'json');
+        // Transformation fin
+        
+        $requestArray['url_excluded_words'] = $json_wordsArray;
+
+        $request->request->set('blogParam', $requestArray); 
+
         $paramForm->handleRequest($request);
 
         if ($paramForm->isValid()) {
@@ -284,20 +300,25 @@ class BlogController extends Controller
     {
         // Filtre les url trouvées dans la page en question - ici on garde les pages html uniquement
         $crawl->addURLFilterRule("#(jpg|gif|png|pdf|jpeg|svg|css|js)$# i"); 
+        
         // Vire les url qui contiennent les chaînes suivantes: /forum/, /affiliates/, /register/, -course, archive?, /excerpts/, /books/
         // /subscribe, /privacy-policy, /terms-and-conditions, /search/, /search?, ?comment
         $crawl->addURLFilterRule("#(\/forum\/|\/affiliates\/|\/register\/|\-course|archive\?|\/excerpts\/|\/books\/|\/subscribe|\/privacy\-policy|\/terms\-and\-conditions|\/search\/|\/search\?|\?comment)# i");        
         // Vire les url qui contiennent les chaînes suivantes en fin de d'url : /contact, /books, /downloads, /archive
         $crawl->addURLFilterRule("#(\/contact|\/books|\/downloads|\/archive|\/about)$# i");
         
+        
         // Règles spécifiques à Château-Heartiste - Wordpress platform (de base)
         $crawl->addURLFilterRule("#(\/about\/|\/category\/|openidserver|replytocom|\/author\/|\?shared|\/page\/|\/alpha-assessment-submissions\/|\/beta-of-the-year-contest-submissions\/|dating\-market\-value\-test\-for)# i");
+        
         
         // Règles spécifiques à The Rational Male - Wordpress (développé spécifiquement)
         $crawl->addURLFilterRule("#(\/tag\/)# i");
         $crawl->addURLFilterRule("#(\/the\-book\/|\/donate\/|\/the\-best\-of\-rational\-male\-year\-one\/)$# i");
         
+        
         // Règles spécifiques à RooshV
+        // cf_action=, doing_wp_cron, %d, /attachment/, /travel/  
         $crawl->addURLFilterRule("#(cf\_action\=|doing\_wp\_cron|\%d|\/attachment\/|\/travel\/)# i");
     }
 

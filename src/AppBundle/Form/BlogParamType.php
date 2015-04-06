@@ -19,6 +19,9 @@ class BlogParamType extends AbstractType
                 'required' => TRUE,
                 'label' => 'Request limit'
             ))
+            ->add('url_excluded_words','hidden', array(
+                'required' => FALSE
+            ))    
         ;
     }    
     

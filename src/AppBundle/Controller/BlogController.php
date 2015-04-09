@@ -16,6 +16,7 @@ use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 use Symfony\Component\Serializer\Serializer;
 use Symfony\Component\Serializer\Encoder\JsonEncoder;
 use Symfony\Component\Serializer\Normalizer\GetSetMethodNormalizer;
+use Symfony\Component\DomCrawler\Crawler;
 
 
 /**
@@ -101,16 +102,30 @@ class BlogController extends Controller
     {
         $em = $this->getDoctrine()->getManager();
         $blog = $em->getRepository('AppBundle:Blog')->find($id);
-
-        $words = $blog->getUrlExcludedWords();
-
-        $wordString = implode(',', json_decode($words));
-        $blog->setUrlExcludedWords($wordString);
-//var_dump($blog);
         
         if (!$blog) {
             throw $this->createNotFoundException('Unable to find Blog entity.');
         }
+        
+        // Récupération des mots filtres pour les url en base
+        $words = $blog->getUrlExcludedWords();        
+        $endwords = $blog->getUrlExcludedEndWords();
+        
+        // Prévision du cas où la colonne json_array est vide et retourne un array vide
+        if(!is_array($words)){
+            $wordString = implode(',', json_decode($words));
+        }else{
+            $wordString = '';
+        }
+        
+        if(!is_array($endwords)){
+            $endwordString = implode(',', json_decode($endwords));
+        }else{
+            $endwordString = '';
+        }
+        
+        $blog->setUrlExcludedWords($wordString);
+        $blog->setUrlExcludedEndWords($endwordString);
        
         $paramForm = $this->createParamForm($blog);        
         
@@ -151,9 +166,13 @@ class BlogController extends Controller
         
         $wordsArray = explode(',', $requestArray['url_excluded_words']);
         $json_wordsArray = $serializer->serialize($wordsArray, 'json');
+        
+        $endwordsArray = explode(',', $requestArray['url_excluded_endwords']);
+        $json_endwordsArray = $serializer->serialize($endwordsArray, 'json');
         // Transformation fin
         
         $requestArray['url_excluded_words'] = $json_wordsArray;
+        $requestArray['url_excluded_endwords'] = $json_endwordsArray;
 
         $request->request->set('blogParam', $requestArray); 
 
@@ -203,9 +222,29 @@ class BlogController extends Controller
         // Request Limit à 0 pour crawler la totalité des url du site après réglages
         $requestLimit = 0;        
         
+        // Essayer: appel de crawlAction puis affichage classique - désactiver le rendu de crawlAction dans le template
+        $crawlResults = $this->crawlAction($id, $requestLimit);
+        
+        $urls = $crawlResults['urls'];
+        $process_report = $crawlResults['process_report'];
+        $blog = $crawlResults['blog'];
+        $em = $crawlResults['em'];
+                        
+        // Enregistrement des résultats en base
+        $encoders = array(new JsonEncoder());
+        $normalizers = array(new GetSetMethodNormalizer());        
+        $serializer = new Serializer($normalizers, $encoders);
+       
+        $json_urls = $serializer->serialize($urls, 'json');
+        
+        $blog->setUrlList($json_urls);
+        $em->persist($blog);
+        $em->flush();
+        
         return array(
-            'id' => $id,
-            'requestLimit' => $requestLimit
+            'urls' => $urls,
+            'process_report' => $process_report,
+            'blog' => $blog
         );
     }
        
@@ -216,11 +255,11 @@ class BlogController extends Controller
      * @Template()
      */
     public function crawlAction($id, $requestLimit)
-    {     
+    {   
         // Récupérer l'url de l'entité avec l'id de l'entité blog
         $em = $this->getDoctrine()->getManager();
-        $blog = $em->getRepository('AppBundle:Blog')->find($id);
-        
+        $blog = $em->getRepository('AppBundle:Blog')->find($id);        
+               
         if(!$blog){
             throw $this->createNotFoundException('Impossible de trouver l\'entité blog demandée');            
         }
@@ -229,13 +268,19 @@ class BlogController extends Controller
         
         // Au lieu de créer une instance de la classe MyCrawler, je l'appelle en tant que service (config.yml)
         $crawl = $this->get('my_crawler');
-
+        
+        // Sets the target url
         $crawl->setURL($url);
         
         // Analyse la balise content-type du document, autorise les pages de type text/html
         $crawl->addContentTypeReceiveRule("#text/html#"); 
         
-        $this->addURLFilterRules($crawl);
+        // Filter Rules
+        $url_excluded_words = $blog->getUrlExcludedWords();
+        $url_excluded_endwords = $blog->getUrlExcludedEndWords();       
+        
+        $this->addURLFilterRules($crawl, $url_excluded_words, $url_excluded_endwords);
+        // Filter Rules End
         
         $crawl->enableCookieHandling(TRUE);
         
@@ -270,24 +315,15 @@ class BlogController extends Controller
         
         // Update de l'entité en BDD
         $urls = $crawl->result;
-        $process_report = $crawl->getProcessReport();
-        
-//        $encoders = array(new JsonEncoder());
-//        $normalizers = array(new GetSetMethodNormalizer());        
-//        $serializer = new Serializer($normalizers, $encoders);
-//        
-//        $json_urls = $serializer->serialize($urls, 'json');
-//        
-//        $blog->setUrlList($json_urls);
-//        $em->persist($blog);
-//        $em->flush();
-       
-        
-//          return $this->render('AppBundle:Blog:crawl.html.twig', array('urls' => $urls, 'process_report' => $process_report));
-        
+        // Dépile la première valeur du résultat qui est l'url de la homepage. Non souhaitée.
+        array_shift($urls);
+        $process_report = $crawl->getProcessReport();       
+
         return array(
             'urls' => $urls,
-            'process_report' => $process_report
+            'process_report' => $process_report,
+            'blog' => $blog,
+            'em' => $em
         );
     }
     
@@ -296,30 +332,44 @@ class BlogController extends Controller
      * 
      * @param object $crawl
      */
-    public function addURLFilterRules($crawl)
+    public function addURLFilterRules($crawl, $url_ex_words, $url_ex_endwords)
     {
+        // Conditions au cas ou il n'y a encore aucune règle dans la base
+        if(!is_array($url_ex_words)){
+            $url_excluded_words = json_decode($url_ex_words);
+        }else{
+            $url_excluded_words = array();
+        }
+        
+        if(!is_array($url_ex_endwords)){
+            $url_excluded_endwords = json_decode($url_ex_endwords);
+        }else{
+            $url_excluded_endwords = array();
+        }
+                
+        // Echappement des caractères spéciaux
+        foreach($url_excluded_words as $key => $value){
+            $url_excluded_words[$key] = preg_quote($value, '/');
+        }
+        foreach($url_excluded_endwords as $key => $value){
+            $url_excluded_endwords[$key] = preg_quote($value, '/');
+        }
+
+        $string_excluded_words = implode("|", $url_excluded_words);
+        $string_excluded_endwords = implode("|", $url_excluded_endwords);
+      
         // Filtre les url trouvées dans la page en question - ici on garde les pages html uniquement
         $crawl->addURLFilterRule("#(jpg|gif|png|pdf|jpeg|svg|css|js)$# i"); 
-        
-        // Vire les url qui contiennent les chaînes suivantes: /forum/, /affiliates/, /register/, -course, archive?, /excerpts/, /books/
-        // /subscribe, /privacy-policy, /terms-and-conditions, /search/, /search?, ?comment
-        $crawl->addURLFilterRule("#(\/forum\/|\/affiliates\/|\/register\/|\-course|archive\?|\/excerpts\/|\/books\/|\/subscribe|\/privacy\-policy|\/terms\-and\-conditions|\/search\/|\/search\?|\?comment)# i");        
-        // Vire les url qui contiennent les chaînes suivantes en fin de d'url : /contact, /books, /downloads, /archive
-        $crawl->addURLFilterRule("#(\/contact|\/books|\/downloads|\/archive|\/about)$# i");
-        
-        
-        // Règles spécifiques à Château-Heartiste - Wordpress platform (de base)
-        $crawl->addURLFilterRule("#(\/about\/|\/category\/|openidserver|replytocom|\/author\/|\?shared|\/page\/|\/alpha-assessment-submissions\/|\/beta-of-the-year-contest-submissions\/|dating\-market\-value\-test\-for)# i");
-        
-        
-        // Règles spécifiques à The Rational Male - Wordpress (développé spécifiquement)
-        $crawl->addURLFilterRule("#(\/tag\/)# i");
-        $crawl->addURLFilterRule("#(\/the\-book\/|\/donate\/|\/the\-best\-of\-rational\-male\-year\-one\/)$# i");
-        
-        
-        // Règles spécifiques à RooshV
-        // cf_action=, doing_wp_cron, %d, /attachment/, /travel/  
-        $crawl->addURLFilterRule("#(cf\_action\=|doing\_wp\_cron|\%d|\/attachment\/|\/travel\/)# i");
+       
+        // Règles définies par l'utilisateur, spécifiques à chaque blog
+        // Vire les url qui contiennent ce type de chaînes : /affiliates/, /register/, -course, archive? etc... 
+        if($string_excluded_words != ''){
+            $crawl->addURLFilterRule("#($string_excluded_words)# i");        
+        }
+        // Vire les url qui contiennent les chaînes suivantes en fin de d'url
+        if($string_excluded_endwords != ''){
+            $crawl->addURLFilterRule("#($string_excluded_endwords)$# i");        
+        }       
     }
 
     /**
@@ -355,11 +405,19 @@ class BlogController extends Controller
         if (!$entity) {
             throw $this->createNotFoundException('Unable to find Blog entity.');
         }
-
+        
+        // Traitement du json array d'urls
+        $json_list = $entity->getUrlList();
+        if($json_list != ''){
+            $urls = json_decode($json_list);
+        }else{
+            $urls = NULL;
+        }
 //        $deleteForm = $this->createDeleteForm($id);
 
         return array(
             'entity'      => $entity,
+            'urls' => $urls
 //            'delete_form' => $deleteForm->createView(),
         );
     }
@@ -504,6 +562,64 @@ class BlogController extends Controller
         $em->flush();
         
         return $this->redirect($this->generateUrl('blog'));
+    }
+    
+    /**
+     * Organize les urls par date de création de l'article (url)
+     * 
+     * @Route("/{id}/organize", name="blog_organize")
+     * @Template()
+     */
+    public function organizeUrlsAction($id)
+    {
+        $em = $this->getDoctrine()->getManager();
+        $blog = $em->getRepository('AppBundle:Blog')->find($id);
+        
+        $json_urls = $blog->getUrlList();
+        $urls = json_decode($json_urls);
+       
+//        $urls[10];
+//        
+//        $domcrawler =  new Crawler($urls[10]);
+//        
+//        foreach($domcrawler as $domElement){
+//            print $domElement->nodeName;
+//        }
+        
+        return array(
+            'urls' => $urls,
+            'blog' => $blog    
+        );
+    }
+    
+    /**
+     * Delete an url from the json array and save to database
+     * 
+     * @Route("/{id}/{key}/organize_delete_url", name="blog_organize_delete_url")
+     */
+    public function deleteUrlAction($id, $key)
+    {
+        $em = $this->getDoctrine()->getManager();
+        $blog = $em->getRepository('AppBundle:Blog')->find($id);
+        
+        $json_urls = $blog->getUrlList();
+        $urls = json_decode($json_urls);
+        
+        unset($urls[$key]);
+        $urls = array_values($urls);
+
+        // Enregistrement en base
+        $encoders = array(new JsonEncoder());
+        $normalizers = array(new GetSetMethodNormalizer());        
+        $serializer = new Serializer($normalizers, $encoders);
+       
+        $json_urls = $serializer->serialize($urls, 'json');
+        
+        $blog->setUrlList($json_urls);
+        $em->persist($blog);
+        $em->flush();
+        
+        return $this->redirect($this->generateUrl('blog_organize', array('id' => $id)));
     }
     
 }

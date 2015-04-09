@@ -2,8 +2,21 @@
 {% block title %}Blog crawler{% endblock %}
 
 {% block body %}
-    <h1>Résultat du crawler</h1>
+    <h1>Résultat du crawler pour {{ blog.nom }}</h1>
     
-    {{ render(controller('AppBundle:Blog:crawl', {'id': id, 'requestLimit': requestLimit })) }}
+    {% for url in urls %}
+        {{ url }}<br/>       
+    {% endfor %}
+    <br/>
+    <fieldset>
+        Links followed: {{ process_report.links_followed }}<br/>
+        Documents received: {{ process_report.files_received }}<br/>
+        Bytes received: {{ process_report.bytes_received }} bytes.<br/>
+        Process runtime: {{ process_report.process_runtime }} sec.<br/>
+    {#        Abort reason: {{ process_report.abort_reason }}<br/>        #}
+    </fieldset>
+    <br/>
+    
+{#    {{ render(controller('AppBundle:Blog:crawl', {'id': id, 'requestLimit': requestLimit })) }}#}
     
 {% endblock %}

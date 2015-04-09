@@ -16,6 +16,7 @@ use PHPCrawlerResponseHeader;
 class MyCrawler extends PHPCrawler{          
     
     public $result = array();
+//    public $counter = 0;
     
     /**
      * Overridable method that will be called after the header of a document was received and BEFORE the content will be received
@@ -41,7 +42,8 @@ class MyCrawler extends PHPCrawler{
         // Si page "OK" (pas de code erreur) et non vide, affiche l'url
         if($status == 200 && $source!='')
         {                                   
-            echo $page_url.'<br/>';            
+//            $this->counter++;
+//            echo $page_url.'<br/>';            
 //            echo "Links found: " . count($pageInfo->links_found_url_descriptors) .'<br/>'; 
 
             $this->result[] = $page_url;            

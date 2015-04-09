@@ -2,22 +2,25 @@
 {% block title %}Crawler parameters{% endblock %}
 
 {% block body -%}
-    <h1>Paramétrage du crawler</h1>
+    <h1>Paramétrage du crawler pour {{ blog.nom }}</h1>
     
 {#    {{ form(paramForm) }}#}
 
     {{ form_start(paramForm, { 'attr': {'id': 'paramForm'}}) }}
         <p>Nombre d'urls que le crawler va chercher: </p>
-        {{ form_row(paramForm.request_limit) }}
+        {{ form_row(paramForm.request_limit) }}<br/>
         
-        <p>Mots exclus des urls: </p>        
+        <p>Les urls contenant ces mots en milieu de chaîne seront exclues: </p>        
         {{ form_row(paramForm.url_excluded_words) }}    
         <input type="text" name="words" placeholder="Words" class="tm-input"/>
-{#        <input type="text" name="endwords" placeholder="EndWords" class="tm-input"/>#}
+        
+        <p>Les urls contenant ces mots en fin de chaîne seront exclues: </p>        
+        {{ form_row(paramForm.url_excluded_endwords) }}
+        <input type="text" name="endwords" placeholder="EndWords" class="tm-input"/>
     {{ form_end(paramForm) }}    
     <br/><br/>
 
-    <a id="crawl_test_button" href='#'>Tester le crawler</a><br/>    
+    <a id="crawl_test_button" href='#'>Crawler test</a><br/>    
     
     <div class="loading"></div>
     <div id="crawl_results"></div>
@@ -25,21 +28,37 @@
     <script type="text/javascript">
         $(document).ready(function(){            
             $(".loading").hide(); 
-           
+            
+            // FROM DATABASE (tagManager operations)
             // modifier la chaîne de caractères venant de la base pour préremplissage du tagManager
             var savedWords = $("#blogParam_url_excluded_words").val();
             savedWords = savedWords.split(",");
+            var savedEndWords = $("#blogParam_url_excluded_endwords").val();
+            savedEndWords = savedEndWords.split(",");
      
             // Tag Manager
-            $(".tm-input").tagsManager({
-                prefilled: savedWords
+            $("input[name='words']").tagsManager({
+                prefilled: savedWords,
+                tagCloseIcon: 'x'
             });
+            $("input[name='endwords']").tagsManager({
+                prefilled: savedEndWords,
+                tagCloseIcon: 'x'
+            });
+            // FROM DATABASE END
             
+            // TO DATABASE (tagManager operations)
             // Transfère l'input du tagManager dans le champ hidden de mon formulaire
             $("input[name='hidden-words']").change(function(){
                 var words = $("input[name='hidden-words']").val();                
                 $("#blogParam_url_excluded_words").val(words);
-            });            
+            });
+            
+            $("input[name='hidden-endwords']").change(function(){
+                var endwords = $("input[name='hidden-endwords']").val();                
+                $("#blogParam_url_excluded_endwords").val(endwords);
+            });
+            // TO DATABASE END
             
             // Déclenche le crawler pour faire un test en ajax
             $('#crawl_test_button').click(function(){
@@ -52,7 +71,7 @@
                 $.ajax({
                     type: "POST",
                     url: url,                   
-                    cache: false,
+                    cache: false,                    
                     success: function(response){
                         $('#crawl_results').html(response);
                         $(".loading").hide();

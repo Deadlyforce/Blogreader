@@ -90,6 +90,14 @@ class Blog
     private $url_excluded_words;
     
     /**
+     *
+     * @var json Array
+     * 
+     * @ORM\Column(name="url_excluded_endwords", type="json_array", nullable=true) 
+     */
+    private $url_excluded_endwords;
+    
+    /**
      * @var int
      * 
      * @ORM\Column(name="request_limit", type="integer", nullable=true)
@@ -302,6 +310,28 @@ class Blog
     public function getUrlExcludedWords()
     {
         return $this->url_excluded_words;
+    }
+    
+    /**
+     * Set url_excluded_endwords
+     * 
+     * @param json array $url_excluded_endwords
+     */
+    public function setUrlExcludedEndWords($url_excluded_endwords)
+    {
+        $this->url_excluded_endwords = $url_excluded_endwords;
+        
+        return $this;
+    }
+    
+    /**
+     * Get url_excluded_endwords
+     * 
+     * @return json Array
+     */
+    public function getUrlExcludedEndWords()
+    {
+        return $this->url_excluded_endwords;
     }
     
     /**

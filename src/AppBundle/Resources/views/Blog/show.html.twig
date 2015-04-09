@@ -3,7 +3,7 @@
 
 {% block body -%}
     <h1>{{ entity.nom }}</h1>
-
+    
     <table class="record_properties table">
         <tbody>
             <tr>
@@ -25,7 +25,7 @@
                 <td class="blog_logo">{% if entity.logo %}<img src="{{ asset(entity.getLogoWeb) }}" />{% endif %}</td>            
             </tr>
         </tbody>
-    </table>
+    </table>          
 
 {#    <a href="{{ path('blog') }}">Retour à la liste</a><br/>#}
 {#    <a href="{{ path('blog_edit', {'id': entity.id}) }}">Modifier</a>#}
@@ -33,8 +33,32 @@
 {#    {{ form(delete_form) }}#}
     
     <h3>Actions</h3>
-    <a href="{{ path('blog_crawl_param_edit', {'id': entity.id}) }}">Paramétrer le crawler</a><br/>
-    <a href="{{ path('blog_crawl_results', {'id': entity.id}) }}">Crawler tout le site</a>
+    <a href="{{ path('blog_organize', {'id': entity.id}) }}">Organize urls</a><br/>
+    <a id="btn_get_urls" href="">Show saved urls</a><br/>
+    <a href="{{ path('blog_crawl_param_edit', {'id': entity.id}) }}">Crawler settings</a><br/>
+    <a href="{{ path('blog_crawl_results', {'id': entity.id}) }}">Get all the articles</a><br/>
+    
+    <div id="show_urls">
+        {% if urls %}
+            {% for url in urls %}
+                {{ url }}<br/>
+            {% endfor %}
+        {% endif %}
+    </div> 
+    
+    <script type="text/javascript">
+        $(document).ready(function(){
+            $("#show_urls").hide();
+            
+            // Affichage des urls actuellement stockées
+            $('#btn_get_urls').click(function(event){
+                event.preventDefault();
+                
+                $("#show_urls").toggle("slow");
+                return false;
+            });
+        });
+    </script>
     
 {% endblock %}
 

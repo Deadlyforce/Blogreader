@@ -22,6 +22,9 @@ class BlogParamType extends AbstractType
             ->add('url_excluded_words','hidden', array(
                 'required' => FALSE
             ))    
+            ->add('url_excluded_endwords','hidden', array(
+                'required' => FALSE
+            ))    
         ;
     }    
     

@@ -10,3 +10,8 @@ body{
     background: url("../images/loading.gif") no-repeat left top;
     height: 40px;
 }
+
+#show_urls{
+    height: 500px;
+    overflow: auto;
+}

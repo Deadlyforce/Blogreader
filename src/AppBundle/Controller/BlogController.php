@@ -36,7 +36,6 @@ class BlogController extends Controller
     public function indexAction()
     {
         $em = $this->getDoctrine()->getManager();
-
         $entities = $em->getRepository('AppBundle:Blog')->findAll();
 
         return array(
@@ -400,24 +399,26 @@ class BlogController extends Controller
     public function showAction($id)
     {
         $em = $this->getDoctrine()->getManager();
-        $entity = $em->getRepository('AppBundle:Blog')->find($id);
+        $blog = $em->getRepository('AppBundle:Blog')->find($id);
 
-        if (!$entity) {
+        if (!$blog) {
             throw $this->createNotFoundException('Unable to find Blog entity.');
         }
         
         // Traitement du json array d'urls
-        $json_list = $entity->getUrlList();
-        if($json_list != ''){
+        $json_list = $blog->getUrlList();
+        if($json_list){
             $urls = json_decode($json_list);
+            $urls_count = count($urls);
         }else{
             $urls = NULL;
-        }
-//        $deleteForm = $this->createDeleteForm($id);
+            $urls_count = 0;
+        }       
 
         return array(
-            'entity'      => $entity,
-            'urls' => $urls
+            'blog'      => $blog,
+            'urls' => $urls,
+            'urls_count' => $urls_count
 //            'delete_form' => $deleteForm->createView(),
         );
     }
@@ -562,40 +563,12 @@ class BlogController extends Controller
         $em->flush();
         
         return $this->redirect($this->generateUrl('blog'));
-    }
-    
-    /**
-     * Organize les urls par date de création de l'article (url)
-     * 
-     * @Route("/{id}/organize", name="blog_organize")
-     * @Template()
-     */
-    public function organizeUrlsAction($id)
-    {
-        $em = $this->getDoctrine()->getManager();
-        $blog = $em->getRepository('AppBundle:Blog')->find($id);
+    }    
         
-        $json_urls = $blog->getUrlList();
-        $urls = json_decode($json_urls);
-       
-//        $urls[10];
-//        
-//        $domcrawler =  new Crawler($urls[10]);
-//        
-//        foreach($domcrawler as $domElement){
-//            print $domElement->nodeName;
-//        }
-        
-        return array(
-            'urls' => $urls,
-            'blog' => $blog    
-        );
-    }
-    
     /**
      * Delete an url from the json array and save to database
      * 
-     * @Route("/{id}/{key}/organize_delete_url", name="blog_organize_delete_url")
+     * @Route("/{id}/{key}/delete_url", name="blog_delete_url")
      */
     public function deleteUrlAction($id, $key)
     {
@@ -619,7 +592,7 @@ class BlogController extends Controller
         $em->persist($blog);
         $em->flush();
         
-        return $this->redirect($this->generateUrl('blog_organize', array('id' => $id)));
+        return $this->redirect($this->generateUrl('blog_show', array('id' => $id)));
     }
     
 }

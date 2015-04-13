@@ -35,7 +35,7 @@ class Article
     /**
      * @var string
      *
-     * @ORM\Column(name="titre", type="string", length=255, nullable=false)
+     * @ORM\Column(name="titre", type="string", length=255, nullable=true)
      * 
      * @Assert\NotBlank(message="Merci de compléter le champ titre.")
      */
@@ -44,7 +44,7 @@ class Article
     /**
      * @var \DateTime
      *
-     * @ORM\Column(name="date", type="datetime", nullable=false)
+     * @ORM\Column(name="date", type="datetime", nullable=true)
      * 
      */
     private $date;
@@ -59,11 +59,17 @@ class Article
     /**
      * @var string
      *
-     * @ORM\Column(name="contenu", type="text", nullable=false)
+     * @ORM\Column(name="contenu", type="text", nullable=true)
      * 
      * @Assert\NotBlank(message="Merci de compléter le contenu.")
      */
     private $contenu;
+    
+    /**
+     * @var string 
+     * @ORM\Column(name="source", type="text", nullable=false)
+     */
+    private $source;
 
 
     /**
@@ -189,6 +195,28 @@ class Article
     public function getBlog()
     {
         return $this->blog;
+    }
+    
+    /**
+     * Set source
+     * 
+     * @param string $source
+     * @return \AppBundle\Entity\Article
+     */
+    public function setSource($source)
+    {
+        $this->source = $source;
+        return $this;
+    }
+    
+    /**
+     * Get source of the document
+     * 
+     * @return string
+     */
+    public function getSource()
+    {
+        return $this->source;
     }
     
     // HELPER METHODS **********************************************************

@@ -9,6 +9,8 @@ use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Template;
 use AppBundle\Entity\Article;
 use AppBundle\Form\ArticleType;
+use Symfony\Component\HttpFoundation\JsonResponse;
+
 
 /**
  * Article controller.
@@ -28,13 +30,148 @@ class ArticleController extends Controller
     public function indexAction()
     {
         $em = $this->getDoctrine()->getManager();
-
         $entities = $em->getRepository('AppBundle:Article')->findAll();
 
         return array(
             'entities' => $entities,
         );
     }
+    
+    /**
+     * Index de tous les articles liés à un blog
+     * 
+     * @param int $blog_id
+     * @Route("/{blog_id}/article_index", name="article_index") 
+     * @Template()
+     */
+    public function articlesIndexAction($blog_id)
+    {
+        $em = $this->getDoctrine()->getManager();
+        $articles = $em->getRepository('AppBundle:Article')->findBy(array('blog' => $blog_id));
+        $blog = $em->getRepository('AppBundle:Blog')->find($blog_id);
+       
+        if(!$articles){
+            $articles = array();
+        }
+        
+        return array(
+            'articles' => $articles,
+            'blog' => $blog
+        );
+    }
+    
+    /**
+     * Recherche tous les documents associés aux urls stockées dans le blog
+     * 
+     * @Route("/{blog_id}/fetch", name="articles_fetch")
+     * @Template()
+     * @param int $blog_id
+     */
+    public function fetchAction($blog_id)
+    {
+        $em = $this->getDoctrine()->getManager();
+        $blog = $em->getRepository('AppBundle:Blog')->find($blog_id);
+        
+        $json_urls = $blog->getUrlList();
+        $urls = json_decode($json_urls);
+
+        // Récup des 10 premières url pour test
+        for($i=0; $i<13; $i++){
+            $urlstest[] = $urls[$i];
+        }
+         
+        $chunkArray = array_chunk($urlstest, 10);
+        
+        $options = array(
+            CURLOPT_RETURNTRANSFER => TRUE,
+            CURLOPT_FOLLOWLOCATION => TRUE,
+            CURLOPT_USERAGENT => 'Mozilla/5.0 (Windows NT 6.3; rv:36.0) Gecko/20100101 Firefox/36.0',
+            CURLOPT_HEADER => FALSE           
+        );
+        
+        foreach($chunkArray as $chunk){
+            $tab = $this->multicurl($chunk, $options);
+            foreach($tab as $subTab){
+                foreach($subTab as $url){
+                   $articles_source[] = $url;
+               }
+            }
+        }
+       
+        $counter = 0;
+        
+        // Enregistrement des sources en base
+        foreach($articles_source as $article_source){
+            $article = new Article();
+            
+            $article->setSource($article_source);
+            $article->setBlog($blog);
+            
+            $em->persist($article);
+            $em->flush();
+            
+            $counter++;
+        }        
+        
+        $return  = array(
+            'articles_sources' => $articles_source,
+            'counter' => $counter,
+            'urls' => $urls,
+            'blog' => $blog
+        );        
+        
+        return new JsonResponse($return);
+       
+//        return array(
+//            'article_sources' => $articles_source,
+//            'counter' => $counter,
+//            'urls' => $urls,
+//            'blog' => $blog
+//        );
+    }
+    
+    /**
+     * Multi Curl process
+     * 
+     * @param array $urls     
+     */
+    private function multicurl($urls, $options = array())
+    {
+        $mh = curl_multi_init(); // Multiple Handles
+        $results = array();
+        $ch = array(); // Curl Handle
+        
+        foreach($urls as $key => $url){
+            $ch[$key] = curl_init();
+            
+            // Set options
+            if($options){
+                curl_setopt_array($ch[$key], $options);
+            }
+            // Set url
+            curl_setopt($ch[$key], CURLOPT_URL, $url);
+            curl_multi_add_handle($mh, $ch[$key]);
+        }
+        
+        $running = NULL;
+        
+        do{
+            curl_multi_exec($mh, $running); // passe les url au navigateur
+        }while($running > 0);
+
+        // Get content and remove handles.
+        foreach($ch as $key => $resource){
+            $results[$key] = curl_multi_getcontent($resource);
+            curl_multi_remove_handle($mh, $resource);
+        }
+        
+        curl_multi_close($mh); // Fermeture de Session Curl
+              
+        return array(
+            'results' => $results
+        );                
+    }
+    
     /**
      * Creates a new Article entity.
      *
@@ -180,7 +317,6 @@ class ArticleController extends Controller
     public function updateAction(Request $request, $id)
     {
         $em = $this->getDoctrine()->getManager();
-
         $entity = $em->getRepository('AppBundle:Article')->find($id);
 
         if (!$entity) {

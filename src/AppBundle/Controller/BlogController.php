@@ -228,15 +228,20 @@ class BlogController extends Controller
         $process_report = $crawlResults['process_report'];
         $blog = $crawlResults['blog'];
         $em = $crawlResults['em'];
-                        
+        
+        // Date actuelle
+        $date = new \DateTime('', new \DateTimeZone('Europe/Paris'));
+        
         // Enregistrement des résultats en base
         $encoders = array(new JsonEncoder());
         $normalizers = array(new GetSetMethodNormalizer());        
         $serializer = new Serializer($normalizers, $encoders);
        
         $json_urls = $serializer->serialize($urls, 'json');
-        
+               
         $blog->setUrlList($json_urls);
+        $blog->setUrlListDate($date);
+        
         $em->persist($blog);
         $em->flush();
         
@@ -276,9 +281,10 @@ class BlogController extends Controller
         
         // Filter Rules
         $url_excluded_words = $blog->getUrlExcludedWords();
-        $url_excluded_endwords = $blog->getUrlExcludedEndWords();       
+        $url_excluded_endwords = $blog->getUrlExcludedEndWords();
+        $url_excluded_date = $blog->getUrlExcludedDate();
         
-        $this->addURLFilterRules($crawl, $url_excluded_words, $url_excluded_endwords);
+        $this->addURLFilterRules($crawl, $url_excluded_words, $url_excluded_endwords, $url_excluded_date);
         // Filter Rules End
         
         $crawl->enableCookieHandling(TRUE);
@@ -331,7 +337,7 @@ class BlogController extends Controller
      * 
      * @param object $crawl
      */
-    public function addURLFilterRules($crawl, $url_ex_words, $url_ex_endwords)
+    public function addURLFilterRules($crawl, $url_ex_words, $url_ex_endwords, $url_excluded_date)
     {
         // Conditions au cas ou il n'y a encore aucune règle dans la base
         if(!is_array($url_ex_words)){
@@ -368,7 +374,12 @@ class BlogController extends Controller
         // Vire les url qui contiennent les chaînes suivantes en fin de d'url
         if($string_excluded_endwords != ''){
             $crawl->addURLFilterRule("#($string_excluded_endwords)$# i");        
-        }       
+        }
+        
+        // Règle pour supprimer les url contenant des dates comme /2014/10/ en fin de chaîne
+        if($url_excluded_date){
+            $crawl->addURLFilterRule("#(\/[0-9]{4}\/(0[1-9]|1[0-2])\/)$# i");
+        }
     }
 
     /**

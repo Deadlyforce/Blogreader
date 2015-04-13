@@ -27,7 +27,7 @@
         </tbody>
     </table>
     
-    <h4>You have collected {{ urls_count }} urls for this blog.</h4>
+    <h4>You have collected {{ urls_count }} urls for this blog. Date : {{ blog.getUrlListDate()|date('d-m-Y') }}</h4>
     {% if urls_count != 0 %}
         <div class="panel panel-default">
             <div class="panel-heading" role="tab" id="headingOne">            

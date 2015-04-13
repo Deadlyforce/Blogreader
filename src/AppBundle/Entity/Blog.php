@@ -83,6 +83,14 @@ class Blog
     
     /**
      *
+     * @var \Datetime
+     * 
+     * @ORM\Column(name="url_list_date", type="datetime", nullable=true) 
+     */
+    private $url_list_date;
+    
+    /**
+     *
      * @var json Array
      * 
      * @ORM\Column(name="url_excluded_words", type="json_array", nullable=true) 
@@ -96,6 +104,13 @@ class Blog
      * @ORM\Column(name="url_excluded_endwords", type="json_array", nullable=true) 
      */
     private $url_excluded_endwords;
+    
+    /**
+     * @var integer
+     * 
+     * @ORM\Column(name="url_excluded_date", type="boolean")
+     */
+    private $url_excluded_date;
     
     /**
      * @var int
@@ -291,6 +306,29 @@ class Blog
     }
     
     /**
+     * Get url list date
+     * 
+     * @return datetime Date de récupération de l'actuelle liste d'urls
+     */
+    public function getUrlListDate()
+    {
+        return $this->url_list_date;
+    }
+    
+    /**
+     * Sets url_list_date
+     * 
+     * @param datetime $url_list_date
+     * @return \AppBundle\Entity\Blog
+     */
+    public function setUrlListDate($url_list_date)
+    {
+        $this->url_list_date = $url_list_date;
+        
+        return $this;
+    }
+    
+    /**
      * Set url_excluded_words
      * 
      * @param json array $url_excluded_words
@@ -342,6 +380,28 @@ class Blog
     public function setRequestLimit($requestLimit)
     {
         $this->request_limit = $requestLimit;
+    }
+    
+    /**
+     * Get url excluded date
+     * 
+     * @return int
+     */
+    public function getUrlExcludedDate()
+    {
+        return $this->url_excluded_date;
+    }
+    
+    /**
+     * Set url excluded date
+     * 
+     * @param int $url_excluded_date
+     * @return \AppBundle\Entity\Blog
+     */
+    public function setUrlExcludedDate($url_excluded_date)
+    {
+        $this->url_excluded_date = $url_excluded_date;
+        return $this;
     }
     
     /**

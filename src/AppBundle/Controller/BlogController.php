@@ -11,12 +11,10 @@ use AppBundle\Entity\Blog;
 use AppBundle\Form\BlogType;
 use AppBundle\Form\BlogParamType;
 
-use Symfony\Component\Security\Core\Exception\AccessDeniedException;
-
 use Symfony\Component\Serializer\Serializer;
 use Symfony\Component\Serializer\Encoder\JsonEncoder;
 use Symfony\Component\Serializer\Normalizer\GetSetMethodNormalizer;
-use Symfony\Component\DomCrawler\Crawler;
+//use Symfony\Component\DomCrawler\Crawler;
 
 
 /**
@@ -207,180 +205,7 @@ class BlogController extends Controller
         ));
         
         return $form;
-    }
-    
-    /**
-     * Parcours le site avec les réglages finaux du crawler
-     * Cette méthode rend le controleur crawlAction dans le template
-     * 
-     * @Route("/crawl/{id}", name="blog_crawl_results")
-     * @Template()
-     */
-    public function crawlResultsAction($id)
-    {
-        // Request Limit à 0 pour crawler la totalité des url du site après réglages
-        $requestLimit = 0;        
-        
-        // Essayer: appel de crawlAction puis affichage classique - désactiver le rendu de crawlAction dans le template
-        $crawlResults = $this->crawlAction($id, $requestLimit);
-        
-        $urls = $crawlResults['urls'];
-        $process_report = $crawlResults['process_report'];
-        $blog = $crawlResults['blog'];
-        $em = $crawlResults['em'];
-        
-        // Date actuelle
-        $date = new \DateTime('', new \DateTimeZone('Europe/Paris'));
-        
-        // Enregistrement des résultats en base
-        $encoders = array(new JsonEncoder());
-        $normalizers = array(new GetSetMethodNormalizer());        
-        $serializer = new Serializer($normalizers, $encoders);
-       
-        $json_urls = $serializer->serialize($urls, 'json');
-               
-        $blog->setUrlList($json_urls);
-        $blog->setUrlListDate($date);
-        
-        $em->persist($blog);
-        $em->flush();
-        
-        return array(
-            'urls' => $urls,
-            'process_report' => $process_report,
-            'blog' => $blog
-        );
-    }
-       
-    /**
-     * Parcours le site concerné
-     * 
-     * @Route("/crawl/{id}/{requestLimit}", name="blog_crawl")     
-     * @Template()
-     */
-    public function crawlAction($id, $requestLimit)
-    {   
-        // Récupérer l'url de l'entité avec l'id de l'entité blog
-        $em = $this->getDoctrine()->getManager();
-        $blog = $em->getRepository('AppBundle:Blog')->find($id);        
-               
-        if(!$blog){
-            throw $this->createNotFoundException('Impossible de trouver l\'entité blog demandée');            
-        }
-        
-        $url = $blog->getUrl();
-        
-        // Au lieu de créer une instance de la classe MyCrawler, je l'appelle en tant que service (config.yml)
-        $crawl = $this->get('my_crawler');
-        
-        // Sets the target url
-        $crawl->setURL($url);
-        
-        // Analyse la balise content-type du document, autorise les pages de type text/html
-        $crawl->addContentTypeReceiveRule("#text/html#"); 
-        
-        // Filter Rules
-        $url_excluded_words = $blog->getUrlExcludedWords();
-        $url_excluded_endwords = $blog->getUrlExcludedEndWords();
-        $url_excluded_date = $blog->getUrlExcludedDate();
-        
-        $this->addURLFilterRules($crawl, $url_excluded_words, $url_excluded_endwords, $url_excluded_date);
-        // Filter Rules End
-        
-        $crawl->enableCookieHandling(TRUE);
-        
-        // Sets a limit to the number of bytes the crawler should receive alltogether during crawling-process.
-        $crawl->setTrafficLimit(0);
-        
-        // Sets a limit to the total number of requests the crawler should execute.
-        $crawl->setRequestLimit($requestLimit);
-        
-        // Sets the content-size-limit for content the crawler should receive from documents.
-        $crawl->setContentSizeLimit(0);
-        
-        // 2 - The crawler will only follow links that lead to the same host like the one in the root-url.
-        // E.g. if the root-url (setURL()) is "http://www.foo.com", the crawler will ONLY follow links to "http://www.foo.com/...", but not
-        // to "http://bar.foo.com/..." and "http://www.another-domain.com/...". This is the default mode.
-        $crawl->setFollowMode(2);
-        
-        // Sets the timeout in seconds for waiting for data on an established server-connection.
-        $crawl->setStreamTimeout(20);
-        
-        // Sets the timeout in seconds for connection tries to hosting webservers.
-        $crawl->setConnectionTimeout(20);
-        
-        // For instance: If the maximum depth is set to 1, the crawler only will follow links found in the entry-page
-        // of the crawling-process, but won't follow any further links found in underlying documents.
-//        $crawl->setCrawlingDepthLimit(3);
-        
-        $crawl->obeyRobotsTxt(TRUE);
-        $crawl->setUserAgentString("Mozilla/5.0 (Windows NT 6.3; rv:36.0) Gecko/20100101 Firefox/36.0");
-      
-        $crawl->go();
-        
-        // Update de l'entité en BDD
-        $urls = $crawl->result;
-        // Dépile la première valeur du résultat qui est l'url de la homepage. Non souhaitée.
-        array_shift($urls);
-        $process_report = $crawl->getProcessReport();       
-
-        return array(
-            'urls' => $urls,
-            'process_report' => $process_report,
-            'blog' => $blog,
-            'em' => $em
-        );
-    }
-    
-    /**
-     * Etablit les règles de filtrage des url ramassées par le crawler
-     * 
-     * @param object $crawl
-     */
-    public function addURLFilterRules($crawl, $url_ex_words, $url_ex_endwords, $url_excluded_date)
-    {
-        // Conditions au cas ou il n'y a encore aucune règle dans la base
-        if(!is_array($url_ex_words)){
-            $url_excluded_words = json_decode($url_ex_words);
-        }else{
-            $url_excluded_words = array();
-        }
-        
-        if(!is_array($url_ex_endwords)){
-            $url_excluded_endwords = json_decode($url_ex_endwords);
-        }else{
-            $url_excluded_endwords = array();
-        }
-                
-        // Echappement des caractères spéciaux
-        foreach($url_excluded_words as $key => $value){
-            $url_excluded_words[$key] = preg_quote($value, '/');
-        }
-        foreach($url_excluded_endwords as $key => $value){
-            $url_excluded_endwords[$key] = preg_quote($value, '/');
-        }
-
-        $string_excluded_words = implode("|", $url_excluded_words);
-        $string_excluded_endwords = implode("|", $url_excluded_endwords);
-      
-        // Filtre les url trouvées dans la page en question - ici on garde les pages html uniquement
-        $crawl->addURLFilterRule("#(jpg|gif|png|pdf|jpeg|svg|css|js)$# i"); 
-       
-        // Règles définies par l'utilisateur, spécifiques à chaque blog
-        // Vire les url qui contiennent ce type de chaînes : /affiliates/, /register/, -course, archive? etc... 
-        if($string_excluded_words != ''){
-            $crawl->addURLFilterRule("#($string_excluded_words)# i");        
-        }
-        // Vire les url qui contiennent les chaînes suivantes en fin de d'url
-        if($string_excluded_endwords != ''){
-            $crawl->addURLFilterRule("#($string_excluded_endwords)$# i");        
-        }
-        
-        // Règle pour supprimer les url contenant des dates comme /2014/10/ en fin de chaîne
-        if($url_excluded_date){
-            $crawl->addURLFilterRule("#(\/[0-9]{4}\/(0[1-9]|1[0-2])\/)$# i");
-        }
-    }
+    }          
 
     /**
      * Displays a form to create a new Blog entity.
@@ -408,28 +233,36 @@ class BlogController extends Controller
      * @Template()
      */
     public function showAction($id)
-    {
+    {           
         $em = $this->getDoctrine()->getManager();
         $blog = $em->getRepository('AppBundle:Blog')->find($id);
-
+        $article = $em->getRepository('AppBundle:Article')->findBy(array('blog' => $id));
+        
         if (!$blog) {
             throw $this->createNotFoundException('Unable to find Blog entity.');
         }
-        
-        // Traitement du json array d'urls
-        $json_list = $blog->getUrlList();
-        if($json_list){
-            $urls = json_decode($json_list);
-            $urls_count = count($urls);
+        if (!$article) {
+            $article_count = 0;
         }else{
-            $urls = NULL;
-            $urls_count = 0;
-        }       
+            $article_count = count($article);
+        }
+        
+        if($blog->getLinksFollowed()){
+            $process_report = array();
+            
+            $process_report['date'] = $blog->getLastCrawlDate();
+            $process_report['links'] = $blog->getLinksFollowed();
+            $process_report['docs'] = $blog->getDocsReceived() - 1;  // -1 pour l'url de base qui est retirée à la sauvegarde
+        }else{
+            $process_report = NULL;
+        }
 
         return array(
             'blog'      => $blog,
-            'urls' => $urls,
-            'urls_count' => $urls_count
+//            'urls' => $urls,
+//            'urls_count' => $urls_count,
+            'process_report' => $process_report,
+            'article_count' => $article_count   
 //            'delete_form' => $deleteForm->createView(),
         );
     }
@@ -575,35 +408,5 @@ class BlogController extends Controller
         
         return $this->redirect($this->generateUrl('blog'));
     }    
-        
-    /**
-     * Delete an url from the json array and save to database
-     * 
-     * @Route("/{id}/{key}/delete_url", name="blog_delete_url")
-     */
-    public function deleteUrlAction($id, $key)
-    {
-        $em = $this->getDoctrine()->getManager();
-        $blog = $em->getRepository('AppBundle:Blog')->find($id);
-        
-        $json_urls = $blog->getUrlList();
-        $urls = json_decode($json_urls);
-        
-        unset($urls[$key]);
-        $urls = array_values($urls);
-
-        // Enregistrement en base
-        $encoders = array(new JsonEncoder());
-        $normalizers = array(new GetSetMethodNormalizer());        
-        $serializer = new Serializer($normalizers, $encoders);
-       
-        $json_urls = $serializer->serialize($urls, 'json');
-        
-        $blog->setUrlList($json_urls);
-        $em->persist($blog);
-        $em->flush();
-        
-        return $this->redirect($this->generateUrl('blog_show', array('id' => $id)));
-    }
-    
+           
 }

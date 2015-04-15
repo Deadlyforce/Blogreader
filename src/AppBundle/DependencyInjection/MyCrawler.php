@@ -8,6 +8,7 @@ use PHPCrawler;
 use PHPCrawlerDocumentInfo;
 use PHPCrawlerResponseHeader;
 
+
 /**
  * Description of MyCrawler
  *
@@ -16,6 +17,7 @@ use PHPCrawlerResponseHeader;
 class MyCrawler extends PHPCrawler{          
     
     public $result = array();
+    public $content = array();
 //    public $counter = 0;
     
     /**
@@ -39,14 +41,20 @@ class MyCrawler extends PHPCrawler{
         $source = $pageInfo->source;
         $status = $pageInfo->http_status_code;
         
+        
         // Si page "OK" (pas de code erreur) et non vide, affiche l'url
         if($status == 200 && $source!='')
-        {                                   
+        {           
+            // Test si cette url est déjà présente en base
+            
+            
 //            $this->counter++;
+//var_dump($this->counter);
 //            echo $page_url.'<br/>';            
 //            echo "Links found: " . count($pageInfo->links_found_url_descriptors) .'<br/>'; 
 
-            $this->result[] = $page_url;            
+            $this->result[] = $page_url;
+            $this->content[] = $pageInfo->content;
             flush();            
         }      
     }    

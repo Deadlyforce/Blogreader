@@ -65,7 +65,7 @@
                 $('.loading').show();
                 
                 var requestLimit = $('#blogParam_request_limit').val();                
-                var url = "{{ path('blog_crawl', {'id': blog.id, 'requestLimit': 'requestLimit'}) }}";
+                var url = "{{ path('article_crawl', {'id': blog.id, 'requestLimit': 'requestLimit'}) }}";
                 url = url.replace("requestLimit", requestLimit);
                 
                 $.ajax({

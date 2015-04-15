@@ -9,7 +9,7 @@ use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Template;
 use AppBundle\Entity\Article;
 use AppBundle\Form\ArticleType;
-use Symfony\Component\HttpFoundation\JsonResponse;
+//use Symfony\Component\HttpFoundation\JsonResponse;
 
 
 /**
@@ -19,35 +19,35 @@ use Symfony\Component\HttpFoundation\JsonResponse;
  */
 class ArticleController extends Controller
 {
-
-    /**
-     * Lists all Article entities.
-     *
-     * @Route("/", name="article")
-     * @Method("GET")
-     * @Template()
-     */
-    public function indexAction()
-    {
-        $em = $this->getDoctrine()->getManager();
-        $entities = $em->getRepository('AppBundle:Article')->findAll();
-
-        return array(
-            'entities' => $entities,
-        );
-    }
+//    /**
+//     * Lists all Article entities.
+//     *
+//     * @Route("/", name="article")
+//     * @Method("GET")
+//     * @Template()
+//     */
+//    public function indexAction()
+//    {
+//        $em = $this->getDoctrine()->getManager();
+//        $entities = $em->getRepository('AppBundle:Article')->findAll();
+//
+//        return array(
+//            'entities' => $entities,
+//        );
+//    }
     
     /**
      * Index de tous les articles liés à un blog
      * 
      * @param int $blog_id
-     * @Route("/{blog_id}/article_index", name="article_index") 
+     * @Route("/{blog_id}/article", name="article") 
      * @Template()
      */
-    public function articlesIndexAction($blog_id)
+    public function articleAction($blog_id)
     {
         $em = $this->getDoctrine()->getManager();
         $articles = $em->getRepository('AppBundle:Article')->findBy(array('blog' => $blog_id));
+       
         $blog = $em->getRepository('AppBundle:Blog')->find($blog_id);
        
         if(!$articles){
@@ -58,118 +58,6 @@ class ArticleController extends Controller
             'articles' => $articles,
             'blog' => $blog
         );
-    }
-    
-    /**
-     * Recherche tous les documents associés aux urls stockées dans le blog
-     * 
-     * @Route("/{blog_id}/fetch", name="articles_fetch")
-     * @Template()
-     * @param int $blog_id
-     */
-    public function fetchAction($blog_id)
-    {
-        $em = $this->getDoctrine()->getManager();
-        $blog = $em->getRepository('AppBundle:Blog')->find($blog_id);
-        
-        $json_urls = $blog->getUrlList();
-        $urls = json_decode($json_urls);
-
-        // Récup des 10 premières url pour test
-        for($i=0; $i<13; $i++){
-            $urlstest[] = $urls[$i];
-        }
-         
-        $chunkArray = array_chunk($urlstest, 10);
-        
-        $options = array(
-            CURLOPT_RETURNTRANSFER => TRUE,
-            CURLOPT_FOLLOWLOCATION => TRUE,
-            CURLOPT_USERAGENT => 'Mozilla/5.0 (Windows NT 6.3; rv:36.0) Gecko/20100101 Firefox/36.0',
-            CURLOPT_HEADER => FALSE           
-        );
-        
-        foreach($chunkArray as $chunk){
-            $tab = $this->multicurl($chunk, $options);
-            foreach($tab as $subTab){
-                foreach($subTab as $url){
-                   $articles_source[] = $url;
-               }
-            }
-        }
-       
-        $counter = 0;
-        
-        // Enregistrement des sources en base
-        foreach($articles_source as $article_source){
-            $article = new Article();
-            
-            $article->setSource($article_source);
-            $article->setBlog($blog);
-            
-            $em->persist($article);
-            $em->flush();
-            
-            $counter++;
-        }        
-        
-        $return  = array(
-            'articles_sources' => $articles_source,
-            'counter' => $counter,
-            'urls' => $urls,
-            'blog' => $blog
-        );        
-        
-        return new JsonResponse($return);
-       
-//        return array(
-//            'article_sources' => $articles_source,
-//            'counter' => $counter,
-//            'urls' => $urls,
-//            'blog' => $blog
-//        );
-    }
-    
-    /**
-     * Multi Curl process
-     * 
-     * @param array $urls     
-     */
-    private function multicurl($urls, $options = array())
-    {
-        $mh = curl_multi_init(); // Multiple Handles
-        $results = array();
-        $ch = array(); // Curl Handle
-        
-        foreach($urls as $key => $url){
-            $ch[$key] = curl_init();
-            
-            // Set options
-            if($options){
-                curl_setopt_array($ch[$key], $options);
-            }
-            // Set url
-            curl_setopt($ch[$key], CURLOPT_URL, $url);
-            curl_multi_add_handle($mh, $ch[$key]);
-        }
-        
-        $running = NULL;
-        
-        do{
-            curl_multi_exec($mh, $running); // passe les url au navigateur
-        }while($running > 0);
-
-        // Get content and remove handles.
-        foreach($ch as $key => $resource){
-            $results[$key] = curl_multi_getcontent($resource);
-            curl_multi_remove_handle($mh, $resource);
-        }
-        
-        curl_multi_close($mh); // Fermeture de Session Curl
-              
-        return array(
-            'results' => $results
-        );                
     }
     
     /**
@@ -240,52 +128,52 @@ class ArticleController extends Controller
     /**
      * Finds and displays a Article entity.
      *
-     * @Route("/{id}", name="article_show")
+     * @Route("/{id}/{blog_id}/show", name="article_show")
      * @Method("GET")
      * @Template()
      */
-    public function showAction($id)
+    public function showAction($id, $blog_id)
     {
         $em = $this->getDoctrine()->getManager();
+        $article = $em->getRepository('AppBundle:Article')->find($id);
 
-        $entity = $em->getRepository('AppBundle:Article')->find($id);
-
-        if (!$entity) {
+        if (!$article) {
             throw $this->createNotFoundException('Unable to find Article entity.');
         }
 
-        $deleteForm = $this->createDeleteForm($id);
+        $deleteForm = $this->createDeleteForm($id, $blog_id);
 
         return array(
-            'entity'      => $entity,
+            'article'      => $article,
             'delete_form' => $deleteForm->createView(),
+            'blog_id' => $blog_id
         );
     }
 
     /**
      * Displays a form to edit an existing Article entity.
      *
-     * @Route("/{id}/edit", name="article_edit")
+     * @Route("/{id}/{blog_id}/edit", name="article_edit")
      * @Method("GET")
      * @Template()
      */
-    public function editAction($id)
+    public function editAction($id, $blog_id)
     {
         $em = $this->getDoctrine()->getManager();
+        $article = $em->getRepository('AppBundle:Article')->find($id);
 
-        $entity = $em->getRepository('AppBundle:Article')->find($id);
-
-        if (!$entity) {
+        if (!$article) {
             throw $this->createNotFoundException('Unable to find Article entity.');
         }
 
-        $editForm = $this->createEditForm($entity);
-        $deleteForm = $this->createDeleteForm($id);
+        $editForm = $this->createEditForm($article);
+        $deleteForm = $this->createDeleteForm($id, $blog_id);
 
         return array(
-            'entity'      => $entity,
+            'article'      => $article,
             'edit_form'   => $editForm->createView(),
             'delete_form' => $deleteForm->createView(),
+            'blog_id' => $blog_id
         );
     }
 
@@ -340,30 +228,50 @@ class ArticleController extends Controller
             'delete_form' => $deleteForm->createView(),
         );
     }
+    
+//    /**
+//     * Deletes an Article entity.
+//     *
+//     * @param int $id Article Id
+//     * @Route("/{id}/delete", name="article_delete")
+//     * @Method("DELETE")
+//     */
+//    public function deleteAction(Request $request, $id)
+//    {
+//        $form = $this->createDeleteForm($id);
+//        $form->handleRequest($request);
+//
+//        if ($form->isValid()) {
+//            $em = $this->getDoctrine()->getManager();
+//            $entity = $em->getRepository('AppBundle:Article')->find($id);
+//
+//            if (!$entity) {
+//                throw $this->createNotFoundException('Unable to find Article entity.');
+//            }
+//
+//            $em->remove($entity);
+//            $em->flush();
+//        }
+//
+//        return $this->redirect($this->generateUrl('article'));
+//    }
+    
     /**
-     * Deletes a Article entity.
-     *
-     * @Route("/{id}", name="article_delete")
-     * @Method("DELETE")
+     * @Route("/{id}/{blog_id}/delete", name="article_delete")
      */
-    public function deleteAction(Request $request, $id)
+    public function deleteArticleAction($id, $blog_id)
     {
-        $form = $this->createDeleteForm($id);
-        $form->handleRequest($request);
-
-        if ($form->isValid()) {
-            $em = $this->getDoctrine()->getManager();
-            $entity = $em->getRepository('AppBundle:Article')->find($id);
-
-            if (!$entity) {
-                throw $this->createNotFoundException('Unable to find Article entity.');
-            }
-
-            $em->remove($entity);
-            $em->flush();
+        $em = $this->getDoctrine()->getManager();
+        $article = $em->getRepository("AppBundle:Article")->find($id);
+        
+        if(!$article){
+            throw $this->createNotFoundException("Unable to find Article entity.");
         }
-
-        return $this->redirect($this->generateUrl('article'));
+        
+        $em->remove($article);
+        $em->flush();
+        
+        return $this->redirectToRoute("article", array('blog_id' => $blog_id));
     }
 
     /**
@@ -373,13 +281,225 @@ class ArticleController extends Controller
      *
      * @return \Symfony\Component\Form\Form The form
      */
-    private function createDeleteForm($id)
+    private function createDeleteForm($id, $blog_id)
     {
         return $this->createFormBuilder()
-            ->setAction($this->generateUrl('article_delete', array('id' => $id)))
+            ->setAction($this->generateUrl('article_delete', array('id' => $id, 'blog_id' => $blog_id)))
             ->setMethod('DELETE')
             ->add('submit', 'submit', array('label' => 'Delete'))
             ->getForm()
         ;
+    }
+    
+    /**
+     * Parcours le site avec les réglages finaux du crawler
+     * Cette méthode rend le controleur crawlAction dans le template
+     * 
+     * @param int $blog_id Blog id
+     * 
+     * @Route("/crawl/{blog_id}", name="article_crawl_results")
+     * @Template()
+     */
+    public function crawlResultsAction($blog_id)
+    {
+        // Vérif si déjà des articles en base
+        $em = $this->getDoctrine()->getManager();
+        $articles = $em->getRepository('AppBundle:Article')->findBy(array('blog' => $blog_id));
+        
+        if($articles){
+            // Vidange de tous les articles avant de récupérer à nouveau un stock
+            foreach($articles as $article){
+                $em->remove($article);
+                $em->flush();
+            }
+        }
+        
+        // Request Limit à 0 pour crawler la totalité des url du site après réglages
+        $requestLimit = 0;        
+        
+        $crawlerResults = $this->crawlAction($blog_id, $requestLimit);        
+        
+        $this->saveCrawlerResultsAction($blog_id, $crawlerResults);
+        
+//        $urls = $crawlResults['urls'];
+//        $contents = $crawlResults['contents'];
+//        $process_report = $crawlerResults['process_report'];
+//        $blog = $crawlerResults['blog'];
+        
+        return $this->redirectToRoute('article', array('blog_id' => $blog_id));  
+    }
+    
+        /**
+     * Saves results of the crawler
+     * 
+     * @param int $id
+     * @param array $crawlerResults
+     */
+    public function saveCrawlerResultsAction($id, $crawlerResults)
+    {
+        $em = $this->getDoctrine()->getManager();
+        $blog = $em->getRepository('AppBundle:Blog')->find($id);
+        
+        $urls = $crawlerResults['urls'];
+        $contents = $crawlerResults['contents'];
+                       
+        $process_report = $crawlerResults['process_report'];          
+        
+        for($i=0; $i<count($urls); $i++){  
+            
+            $article = new Article();
+            
+            // Date actuelle
+            $date = new \DateTime('', new \DateTimeZone('Europe/Paris'));       
+            $article->setSaveDate($date);
+            
+            $article->setBlog($blog);            
+            $article->setUrl($urls[$i]);
+            $article->setSource($contents[$i]);
+            
+            $em->persist($article);
+            $em->flush();
+        }
+        
+        // Enregistrement du process_report dans Blog
+        $blog->setLinksFollowed($process_report->links_followed);
+        $blog->setDocsReceived($process_report->files_received);
+        $blog->setLastCrawlDate($date);
+        
+        $em->persist($blog);
+        $em->flush();
+    }
+    
+    /**
+     * Parcours le site concerné
+     * 
+     * @Route("/crawl/{id}/{requestLimit}", name="article_crawl")     
+     * @Template()
+     */
+    public function crawlAction($id, $requestLimit)
+    {   
+        // Récupérer l'url de l'entité avec l'id de l'entité blog
+        $em = $this->getDoctrine()->getManager();
+        $blog = $em->getRepository('AppBundle:Blog')->find($id);        
+               
+        if(!$blog){
+            throw $this->createNotFoundException('Impossible de trouver l\'entité blog demandée');            
+        }
+        
+        $url = $blog->getUrl();
+        
+        // Au lieu de créer une instance de la classe MyCrawler, je l'appelle en tant que service (config.yml)
+        $crawl = $this->get('my_crawler');
+        
+        // Sets the target url
+        $crawl->setURL($url);
+        
+        // Analyse la balise content-type du document, autorise les pages de type text/html
+        $crawl->addContentTypeReceiveRule("#text/html#"); 
+        
+        // Filter Rules
+        $url_excluded_words = $blog->getUrlExcludedWords();
+        $url_excluded_endwords = $blog->getUrlExcludedEndWords();
+        $url_excluded_date = $blog->getUrlExcludedDate();
+        
+        $this->addURLFilterRules($crawl, $url_excluded_words, $url_excluded_endwords, $url_excluded_date);
+        // Filter Rules End
+        
+        $crawl->enableCookieHandling(TRUE);
+        
+        // Sets a limit to the number of bytes the crawler should receive alltogether during crawling-process.
+        $crawl->setTrafficLimit(0);
+        
+        // Sets a limit to the total number of requests the crawler should execute.
+        $crawl->setRequestLimit($requestLimit);
+        
+        // Sets the content-size-limit for content the crawler should receive from documents.
+        $crawl->setContentSizeLimit(0);
+        
+        // 2 - The crawler will only follow links that lead to the same host like the one in the root-url.
+        // E.g. if the root-url (setURL()) is "http://www.foo.com", the crawler will ONLY follow links to "http://www.foo.com/...", but not
+        // to "http://bar.foo.com/..." and "http://www.another-domain.com/...". This is the default mode.
+        $crawl->setFollowMode(2);
+        
+        // Sets the timeout in seconds for waiting for data on an established server-connection.
+        $crawl->setStreamTimeout(20);
+        
+        // Sets the timeout in seconds for connection tries to hosting webservers.
+        $crawl->setConnectionTimeout(20);
+        
+        // For instance: If the maximum depth is set to 1, the crawler only will follow links found in the entry-page
+        // of the crawling-process, but won't follow any further links found in underlying documents.
+//        $crawl->setCrawlingDepthLimit(3);
+        
+        $crawl->obeyRobotsTxt(TRUE);
+        $crawl->setUserAgentString("Mozilla/5.0 (Windows NT 6.3; rv:36.0) Gecko/20100101 Firefox/36.0");
+      
+        $crawl->go();
+
+        // Récupération des urls
+        $urls = $crawl->result;
+        $contents = $crawl->content;
+        
+        // Dépile la première valeur du résultat qui est l'url de la homepage. Non souhaitée.
+        array_shift($urls);
+        array_shift($contents);
+        
+        $process_report = $crawl->getProcessReport();       
+
+        return array(
+            'urls' => $urls,
+            'contents' => $contents,
+            'process_report' => $process_report
+        );
+    }
+    
+    /**
+     * Etablit les règles de filtrage des url ramassées par le crawler
+     * 
+     * @param object $crawl
+     */
+    public function addURLFilterRules($crawl, $url_ex_words, $url_ex_endwords, $url_excluded_date)
+    {
+        // Conditions au cas ou il n'y a encore aucune règle dans la base
+        if(!is_array($url_ex_words)){
+            $url_excluded_words = json_decode($url_ex_words);
+        }else{
+            $url_excluded_words = array();
+        }
+        
+        if(!is_array($url_ex_endwords)){
+            $url_excluded_endwords = json_decode($url_ex_endwords);
+        }else{
+            $url_excluded_endwords = array();
+        }
+                
+        // Echappement des caractères spéciaux
+        foreach($url_excluded_words as $key => $value){
+            $url_excluded_words[$key] = preg_quote($value, '/');
+        }
+        foreach($url_excluded_endwords as $key => $value){
+            $url_excluded_endwords[$key] = preg_quote($value, '/');
+        }
+
+        $string_excluded_words = implode("|", $url_excluded_words);
+        $string_excluded_endwords = implode("|", $url_excluded_endwords);
+      
+        // Filtre les url trouvées dans la page en question - ici on garde les pages html uniquement
+        $crawl->addURLFilterRule("#(jpg|gif|png|pdf|jpeg|svg|css|js)$# i"); 
+       
+        // Règles définies par l'utilisateur, spécifiques à chaque blog
+        // Vire les url qui contiennent ce type de chaînes : /affiliates/, /register/, -course, archive? etc... 
+        if($string_excluded_words != ''){
+            $crawl->addURLFilterRule("#($string_excluded_words)# i");        
+        }
+        // Vire les url qui contiennent les chaînes suivantes en fin de d'url
+        if($string_excluded_endwords != ''){
+            $crawl->addURLFilterRule("#($string_excluded_endwords)$# i");        
+        }
+        
+        // Règle pour supprimer les url contenant des dates comme /2014/10/ en fin de chaîne
+        if($url_excluded_date){
+            $crawl->addURLFilterRule("#(\/[0-9]{4}\/(0[1-9]|1[0-2])\/)$# i");
+        }
     }
 }

@@ -73,21 +73,30 @@ class Blog
      * @ORM\Column(name="logo", type="string", length=255, nullable=true)
      */
     private $logo;
+ 
+    /**
+     * Date du dernier crawl
+     * 
+     * @var \Datetime 
+     * @ORM\Column(name="last_crawl_date", type="datetime", nullable=true) 
+     */
+    private $last_crawl_date;
     
     /**
-     * @var json_array
+     * Nombre de liens suivis par le crawler
      * 
-     * @ORM\Column(name="url_list", type="json_array", nullable=true) 
+     * @var int 
+     * @ORM\Column(name="links_followed", type="integer", nullable=true)
      */
-    private $url_list;
+    private $links_followed;
     
     /**
-     *
-     * @var \Datetime
+     * Nombre de documents effectivement reçus (après filtrage)
      * 
-     * @ORM\Column(name="url_list_date", type="datetime", nullable=true) 
+     * @var int
+     * @ORM\Column(name="docs_received", type="integer", nullable=true) 
      */
-    private $url_list_date;
+    private $docs_received;
     
     /**
      *
@@ -280,51 +289,71 @@ class Blog
     public function getLogo()
     {
         return $this->logo;
+    }    
+   
+    /**
+     * Get last crawl date
+     * 
+     * @return datetime Date de dernière récupération de l'actuelle liste d'urls
+     */
+    public function getLastCrawlDate()
+    {
+        return $this->last_crawl_date;
     }
     
     /**
-     * Set url_list
-     *
-     * @param json_array $url_list
-     * @return Blog
+     * Sets last crawl date
+     * 
+     * @param datetime $last_crawl_date
+     * @return \AppBundle\Entity\Blog
      */
-    public function setUrlList($url_list)
+    public function setLastCrawlDate($last_crawl_date)
     {
-        $this->url_list = $url_list;
-
+        $this->last_crawl_date = $last_crawl_date;        
         return $this;
     }
     
     /**
-     * Get url_list
-     *
-     * @return json_array 
+     * Get number of followed links
+     * 
+     * @return int
      */
-    public function getUrlList()
+    public function getLinksFollowed()
     {
-        return $this->url_list;
+        return $this->links_followed;
     }
     
     /**
-     * Get url list date
+     * Sets number of followed links
      * 
-     * @return datetime Date de récupération de l'actuelle liste d'urls
-     */
-    public function getUrlListDate()
-    {
-        return $this->url_list_date;
-    }
-    
-    /**
-     * Sets url_list_date
-     * 
-     * @param datetime $url_list_date
+     * @param int $links_followed
      * @return \AppBundle\Entity\Blog
      */
-    public function setUrlListDate($url_list_date)
+    public function setLinksFollowed($links_followed)
     {
-        $this->url_list_date = $url_list_date;
-        
+        $this->links_followed = $links_followed;        
+        return $this;
+    }
+    
+    /**
+     * Get number of docs received
+     * 
+     * @return int
+     */
+    public function getDocsReceived()
+    {
+        return $this->docs_received;
+    }
+    
+    /**
+     * Sets number of docs received
+     * 
+     * @param int $docs_received
+     * @return \AppBundle\Entity\Blog
+     */
+    public function setDocsReceived($docs_received)
+    {
+        $this->docs_received = $docs_received;        
         return $this;
     }
     

@@ -12,3 +12,9 @@ services:
     # PHPCrawl 
     my_crawler:
         class: AppBundle\DependencyInjection\MyCrawler
+    
+    # Using ArticleController as a service in BlogController    
+#    app.article_controller:
+#        class: AppBundle\Controller\ArticleController
+#        calls: 
+#            - [setContainer, ["@service_container"]]

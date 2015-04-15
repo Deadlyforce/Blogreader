@@ -26,8 +26,21 @@
             </tr>
         </tbody>
     </table>
+            
+    {# Process Report here #}
+    {% if process_report %}
+        <div class="panel panel-default">            
+            <div class="panel-body">
+                <p>Last crawl date : {{ process_report['date']|date("d-m-Y") }}</p>
+                <p>Number of visited links : {{ process_report['links'] }}</p>
+                <p>Number of docs saved : {{ process_report['docs'] }}</p>
+            </div>
+        </div>
+    {% endif %}  
+    <p>Number of actual urls in database for {{ blog.nom }} : {{ article_count }}</p>
     
-    <h4>You have collected {{ urls_count }} urls for this blog. Date : {{ blog.getUrlListDate()|date('d-m-Y') }}</h4>
+    
+    {#<h4>You have collected {{ urls_count }} urls for this blog. Date : {{ blog.getUrlListDate()|date('d-m-Y') }}</h4>
     {% if urls_count != 0 %}
         <div class="panel panel-default">
             <div class="panel-heading" role="tab" id="headingOne">            
@@ -52,20 +65,28 @@
                 </div>
             </div>
         </div>
-    {% endif %}
+    {% endif %}#}
+    
+{#    {% if process_report %}
+        <p>Links followed: {{ process_report.links_followed }}</p>
+        <p>Documents received: {{ process_report.files_received }}</p>
+        <p>Bytes received: {{ process_report.bytes_received }} bytes.</p>
+        <p>Process runtime: {{ process_report.process_runtime }} sec.</p>
+    {% endif %}#}
 
 {#    <a href="{{ path('blog') }}">Retour à la liste</a><br/>#}
 {#    <a href="{{ path('blog_edit', {'id': entity.id}) }}">Modifier</a>#}
 
 {#    {{ form(delete_form) }}#}
-    
+    <a href="{{ path('article', {'blog_id': blog.id}) }}">Articles</a><br/>
+
     <h3>Actions</h3>
     <a href="{{ path('blog_crawl_param_edit', {'id': blog.id}) }}">1. Crawler settings and testing</a><br/>
 {#    <a id="btn_get_urls" href="">Show saved urls</a><br/>#}
-    <a href="{{ path('blog_crawl_results', {'id': blog.id}) }}">2. Get all the urls</a><br/>
-    {% if urls_count != 0 %}
+    <a href="{{ path('article_crawl_results', {'blog_id': blog.id}) }}">2. Get url and html sources (full crawl)</a><br/>
+{#    {% if urls_count != 0 %}
         <a href="{{ path('article_index', {'blog_id': blog.id}) }}">3. Fetch related content</a><br/>
-    {% endif %}
+    {% endif %}#}
 {#    <div id="show_urls">
         {% if urls %}
             {% for url in urls %}

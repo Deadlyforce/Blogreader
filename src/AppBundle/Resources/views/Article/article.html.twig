@@ -1,0 +1,42 @@
+{% extends '::base.html.twig' %}
+{% block title %}Articles index for {{ blog.nom }}{% endblock %}
+
+{% block body -%}
+    <h3>Articles index for {{ blog.nom }}</h3>
+    
+    <a href="{{ path('blog_show', {'id': blog.id}) }}" title="{{ blog.nom }} Blog page">Back to {{ blog.nom }} Blog page</a><br/><br/>
+    
+    {% if articles %}
+        <table class="table table-hover">
+            <tr>
+                <th>Id</th>
+                <th>Url</th>
+                <th>Delete</th>
+            </tr>
+            {% for article in articles %}
+                <tr>
+                    <td>
+                        {{ article.id }}
+                    </td>
+                    <td>
+                        <a href="{{ path('article_show', {'id': article.id, 'blog_id': blog.id}) }}" title="Article Details">{{ article.url }}</a>
+                    </td>
+                    <td>
+                        <a href="{{ path('article_delete', {'id': article.id, 'blog_id': blog.id}) }}" title="Delete">X</a>
+                    </td>
+                </tr>
+            {% endfor %}
+        </table>
+        {# Bouton pour voir les articles #}
+    {% else %}
+        <p>No docs retrieved yet.</p>        
+    {% endif %}    
+    
+    <script type="text/javascript">
+        $(document).ready(function(){
+            
+            
+            
+        });
+    </script>
+{% endblock %}

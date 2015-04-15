@@ -70,7 +70,19 @@ class Article
      * @ORM\Column(name="source", type="text", nullable=false)
      */
     private $source;
-
+    
+    /**
+     * @var string 
+     * @ORM\Column(name="url", type="text", nullable=false)
+     */
+    private $url;
+    
+    /**
+     *
+     * @var datetime
+     * @ORM\Column(name="save_date", type="datetime", nullable=false) 
+     */
+    private $save_date;
 
     /**
      * Get id
@@ -217,6 +229,50 @@ class Article
     public function getSource()
     {
         return $this->source;
+    }
+    
+    /**
+     * Set url
+     * 
+     * @param string $url
+     * @return \AppBundle\Entity\Article
+     */
+    public function setUrl($url)
+    {
+        $this->url = $url;
+        return $this;
+    }
+    
+    /**
+     * Get save_date
+     * 
+     * @return datetime
+     */
+    public function getSaveDate()
+    {
+        return $this->save_date;
+    }
+    
+    /**
+     * Set save_date
+     * 
+     * @param string $save_date
+     * @return \AppBundle\Entity\Article
+     */
+    public function setSaveDate($save_date)
+    {
+        $this->save_date = $save_date;
+        return $this;
+    }
+    
+    /**
+     * Get url
+     * 
+     * @return string
+     */
+    public function getUrl()
+    {
+        return $this->url;
     }
     
     // HELPER METHODS **********************************************************

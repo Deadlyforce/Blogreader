@@ -30,6 +30,11 @@ class BlogParamType extends AbstractType
                 'required' => FALSE,
                 'value' => FALSE
             ))
+            ->add('url_excluded_year', 'checkbox', array(
+                'label' => 'Suppress urls with date ending : /2013/',
+                'required' => FALSE,
+                'value' => FALSE
+            ))
         ;
     }    
     

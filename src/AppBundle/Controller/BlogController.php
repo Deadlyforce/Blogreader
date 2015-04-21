@@ -253,6 +253,12 @@ class BlogController extends Controller
             $process_report['date'] = $blog->getLastCrawlDate();
             $process_report['links'] = $blog->getLinksFollowed();
             $process_report['docs'] = $blog->getDocsReceived() - 1;  // -1 pour l'url de base qui est retirée à la sauvegarde
+            
+            $data = $this->formatBytes($blog->getBytesReceived());
+            $process_report['bytes'] = $data;
+            
+            $timing = $this->convertSeconds($blog->getProcessRuntime());            
+            $process_report['time'] = $timing;
         }else{
             $process_report = NULL;
         }
@@ -265,6 +271,37 @@ class BlogController extends Controller
             'article_count' => $article_count   
 //            'delete_form' => $deleteForm->createView(),
         );
+    }
+    
+    /**
+     * Retourne une chaîne représentant la durée du process (secondes -> heures min sec)
+     * 
+     * @param int $seconds
+     * @return string
+     */
+    public function convertSeconds($seconds)
+    {
+        return sprintf('%02dh:%02dmn:%02ds', ($seconds/3600), ($seconds/60%60), ($seconds%60));
+    }
+    
+    /**
+     * Convertit les bytes en KB, MB, GB etc
+     * 
+     * @param int $bytes
+     * @param int $precision
+     * @return string
+     */
+    public function formatBytes($bytes, $precision = 2)
+    {
+        $units = array('B', 'KB', 'MB', 'GB', 'TB'); 
+
+        $bytes = max($bytes, 0); 
+        $pow = floor(($bytes ? log($bytes) : 0) / log(1024)); 
+        $pow = min($pow, count($units) - 1); 
+        
+        $bytes /= pow(1024, $pow);
+        
+        return round($bytes, $precision) . ' ' . $units[$pow]; 
     }
 
     /**

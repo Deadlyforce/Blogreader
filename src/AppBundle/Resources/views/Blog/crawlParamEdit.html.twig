@@ -64,9 +64,11 @@
             $('#crawl_test_button').click(function(){
                 $('.loading').show();
                 
-                var requestLimit = $('#blogParam_request_limit').val();                
-                var url = "{{ path('article_crawl', {'id': blog.id, 'requestLimit': 'requestLimit'}) }}";
+                var requestLimit = $('#blogParam_request_limit').val(); 
+                var status = 0;
+                var url = "{{ path('article_crawl', {'id': blog.id, 'status': 'status', 'requestLimit': 'requestLimit'}) }}";
                 url = url.replace("requestLimit", requestLimit);
+                url = url.replace("status", status);
                 
                 $.ajax({
                     type: "POST",

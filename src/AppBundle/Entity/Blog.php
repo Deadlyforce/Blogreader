@@ -99,6 +99,22 @@ class Blog
     private $docs_received;
     
     /**
+     * Durée du crawl process
+     * 
+     * @var int 
+     * @ORM\Column(name="process_runtime", type="integer", nullable=true)
+     */
+    private $process_runtime;
+    
+    /**
+     * Quantité de données reçues
+     * 
+     * @var int 
+     * @ORM\Column(name="bytes_received", type="integer", nullable=true)
+     */
+    private $bytes_received;
+    
+    /**
      *
      * @var json Array
      * 
@@ -115,11 +131,22 @@ class Blog
     private $url_excluded_endwords;
     
     /**
-     * @var integer
+     * Concerne une règle pour les url finissant par une date de type :  /2014/11/
+     * 
+     * @var int
      * 
      * @ORM\Column(name="url_excluded_date", type="boolean")
      */
     private $url_excluded_date;
+    
+    /**
+     * Concerne une règle pour les url finissant par une date de type :  /2014/
+     * 
+     * @var int
+     * 
+     * @ORM\Column(name="url_excluded_year", type="boolean")
+     */
+    private $url_excluded_year;
     
     /**
      * @var int
@@ -358,6 +385,50 @@ class Blog
     }
     
     /**
+     * Get crawl process runtime
+     * 
+     * @return int
+     */
+    public function getProcessRuntime()
+    {
+        return $this->process_runtime;
+    }
+    
+    /**
+     * Sets process runtime
+     * 
+     * @param int $process_runtime
+     * @return \AppBundle\Entity\Blog
+     */
+    public function setProcessRuntime($process_runtime)
+    {
+        $this->process_runtime = $process_runtime;        
+        return $this;
+    }
+    
+    /**
+     * Get crawl bytes received
+     * 
+     * @return int
+     */
+    public function getBytesReceived()
+    {
+        return $this->bytes_received;
+    }
+    
+    /**
+     * Sets bytes received
+     * 
+     * @param int $bytes_received
+     * @return \AppBundle\Entity\Blog
+     */
+    public function setBytesReceived($bytes_received)
+    {
+        $this->bytes_received = $bytes_received;        
+        return $this;
+    }
+    
+    /**
      * Set url_excluded_words
      * 
      * @param json array $url_excluded_words
@@ -430,6 +501,28 @@ class Blog
     public function setUrlExcludedDate($url_excluded_date)
     {
         $this->url_excluded_date = $url_excluded_date;
+        return $this;
+    }
+    
+    /**
+     * Get url excluded year
+     * 
+     * @return int
+     */
+    public function getUrlExcludedYear()
+    {
+        return $this->url_excluded_year;
+    }
+    
+    /**
+     * Set url excluded year
+     * 
+     * @param int $url_excluded_year
+     * @return \AppBundle\Entity\Blog
+     */
+    public function setUrlExcludedYear($url_excluded_year)
+    {
+        $this->url_excluded_year = $url_excluded_year;
         return $this;
     }
     

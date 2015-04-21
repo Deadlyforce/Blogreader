@@ -9,6 +9,8 @@ use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Template;
 use AppBundle\Entity\Article;
 use AppBundle\Form\ArticleType;
+
+use PHPCrawlerUrlCacheTypes;
 //use Symfony\Component\HttpFoundation\JsonResponse;
 
 
@@ -305,7 +307,7 @@ class ArticleController extends Controller
         // Vérif si déjà des articles en base
         $em = $this->getDoctrine()->getManager();
         $articles = $em->getRepository('AppBundle:Article')->findBy(array('blog' => $blog_id));
-        
+
         if($articles){
             // Vidange de tous les articles avant de récupérer à nouveau un stock
             foreach($articles as $article){
@@ -317,66 +319,51 @@ class ArticleController extends Controller
         // Request Limit à 0 pour crawler la totalité des url du site après réglages
         $requestLimit = 0;        
         
-        $crawlerResults = $this->crawlAction($blog_id, $requestLimit);        
+        ini_set('memory_limit', '256M');
         
-        $this->saveCrawlerResultsAction($blog_id, $crawlerResults);
-        
-//        $urls = $crawlResults['urls'];
-//        $contents = $crawlResults['contents'];
-//        $process_report = $crawlerResults['process_report'];
-//        $blog = $crawlerResults['blog'];
+        // crawl
+        $crawlReport = $this->crawlAction($blog_id, $status = 1, $requestLimit);        
+        // Sauvegarde du rapport de crawl
+        $this->saveReportAction($blog_id, $crawlReport);
         
         return $this->redirectToRoute('article', array('blog_id' => $blog_id));  
     }
     
-        /**
-     * Saves results of the crawler
+    /**
+     * Saves the crawler report
      * 
-     * @param int $id
-     * @param array $crawlerResults
+     * @param int $id Blog id
+     * @param array $crawlReport Crawler Stats
      */
-    public function saveCrawlerResultsAction($id, $crawlerResults)
+    public function saveReportAction($id, $crawlReport)
     {
         $em = $this->getDoctrine()->getManager();
         $blog = $em->getRepository('AppBundle:Blog')->find($id);
         
-        $urls = $crawlerResults['urls'];
-        $contents = $crawlerResults['contents'];
-                       
-        $process_report = $crawlerResults['process_report'];          
+        // Date actuelle
+        $date = new \DateTime('', new \DateTimeZone('Europe/Paris')); 
         
-        for($i=0; $i<count($urls); $i++){  
-            
-            $article = new Article();
-            
-            // Date actuelle
-            $date = new \DateTime('', new \DateTimeZone('Europe/Paris'));       
-            $article->setSaveDate($date);
-            
-            $article->setBlog($blog);            
-            $article->setUrl($urls[$i]);
-            $article->setSource($contents[$i]);
-            
-            $em->persist($article);
-            $em->flush();
-        }
+        $process_report = $crawlReport['process_report'];
         
         // Enregistrement du process_report dans Blog
         $blog->setLinksFollowed($process_report->links_followed);
         $blog->setDocsReceived($process_report->files_received);
-        $blog->setLastCrawlDate($date);
+        $blog->setProcessRuntime($process_report->process_runtime);
+        $blog->setBytesReceived($process_report->bytes_received);
         
+        $blog->setLastCrawlDate($date);
+          
         $em->persist($blog);
         $em->flush();
     }
-    
+        
     /**
      * Parcours le site concerné
      * 
-     * @Route("/crawl/{id}/{requestLimit}", name="article_crawl")     
+     * @Route("/crawl/{id}/{status}/{requestLimit}", name="article_crawl")     
      * @Template()
      */
-    public function crawlAction($id, $requestLimit)
+    public function crawlAction($id, $status = 1, $requestLimit)
     {   
         // Récupérer l'url de l'entité avec l'id de l'entité blog
         $em = $this->getDoctrine()->getManager();
@@ -391,8 +378,18 @@ class ArticleController extends Controller
         // Au lieu de créer une instance de la classe MyCrawler, je l'appelle en tant que service (config.yml)
         $crawl = $this->get('my_crawler');
         
+        // Passe l'id du blog au crawler et le statut de la requête (test ou final)
+        $crawl->blog_id = $id;
+        // Détermine si il s'agit d'un crawl final (toutes url + sauvegarde et donc valeur 1) ou d'un test (valeur 0)
+        $crawl->status = $status;
+        // Passe l'entity manager au service
+        $crawl->em = $em;
+        
         // Sets the target url
         $crawl->setURL($url);
+        
+        // Spidering huge websites : activates the SQLite-cache 
+        $crawl->setUrlCacheType(PHPCrawlerUrlCacheTypes::URLCACHE_SQLITE);
         
         // Analyse la balise content-type du document, autorise les pages de type text/html
         $crawl->addContentTypeReceiveRule("#text/html#"); 
@@ -401,8 +398,9 @@ class ArticleController extends Controller
         $url_excluded_words = $blog->getUrlExcludedWords();
         $url_excluded_endwords = $blog->getUrlExcludedEndWords();
         $url_excluded_date = $blog->getUrlExcludedDate();
+        $url_excluded_year = $blog->getUrlExcludedYear();
         
-        $this->addURLFilterRules($crawl, $url_excluded_words, $url_excluded_endwords, $url_excluded_date);
+        $this->addURLFilterRules($crawl, $url_excluded_words, $url_excluded_endwords, $url_excluded_date, $url_excluded_year);
         // Filter Rules End
         
         $crawl->enableCookieHandling(TRUE);
@@ -458,7 +456,7 @@ class ArticleController extends Controller
      * 
      * @param object $crawl
      */
-    public function addURLFilterRules($crawl, $url_ex_words, $url_ex_endwords, $url_excluded_date)
+    public function addURLFilterRules($crawl, $url_ex_words, $url_ex_endwords, $url_excluded_date, $url_excluded_year)
     {
         // Conditions au cas ou il n'y a encore aucune règle dans la base
         if(!is_array($url_ex_words)){
@@ -500,6 +498,10 @@ class ArticleController extends Controller
         // Règle pour supprimer les url contenant des dates comme /2014/10/ en fin de chaîne
         if($url_excluded_date){
             $crawl->addURLFilterRule("#(\/[0-9]{4}\/(0[1-9]|1[0-2])\/)$# i");
+        }
+        // Règle pour supprimer les url contenant des dates comme /2014/ en fin de chaîne
+        if($url_excluded_year){
+            $crawl->addURLFilterRule("#(\/[0-9]{4}\/)$# i");
         }
     }
 }

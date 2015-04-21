@@ -10,12 +10,16 @@
                 <td>{{ article.id }}</td>
             </tr>
             <tr>
+                <th>url</th>
+                <td><a target="_blank" href="{{ article.url }}" title="{{ article.titre }}">{{ article.url }}</a></td>
+            </tr>
+            <tr>
                 <th>Titre</th>
-                <td>{{ article.titre }}</td>
+                <td>{% if article.titre %}{{ article.titre }}{% else %}No title{% endif %}</td>
             </tr>
             <tr>
                 <th>Date</th>
-                <td>{{ article.date|date('Y-m-d H:i:s') }}</td>
+                <td>{% if article.date %}{{ article.date|date('Y-m-d') }}{% else %}No date{% endif %}</td>
             </tr>
             <tr>
                 <th>Imageprincipale</th>
@@ -24,6 +28,10 @@
             <tr>
                 <th>Contenu</th>
                 <td>{{ article.contenu }}</td>
+            </tr>
+            <tr>
+                <th>Source</th>
+                <td>{{ article.source }}</td>
             </tr>
         </tbody>
     </table>

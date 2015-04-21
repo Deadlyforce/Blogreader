@@ -12,6 +12,7 @@ services:
     # PHPCrawl 
     my_crawler:
         class: AppBundle\DependencyInjection\MyCrawler
+        arguments: [ @doctrine.orm.entity_manager ]
     
     # Using ArticleController as a service in BlogController    
 #    app.article_controller:

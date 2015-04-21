@@ -34,6 +34,8 @@
                 <p>Last crawl date : {{ process_report['date']|date("d-m-Y") }}</p>
                 <p>Number of visited links : {{ process_report['links'] }}</p>
                 <p>Number of docs saved : {{ process_report['docs'] }}</p>
+                <p>Bytes received : {{ process_report['bytes'] }}</p>
+                <p>Process runtime : {{ process_report['time'] }}</p>
             </div>
         </div>
     {% endif %}  

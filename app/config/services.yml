@@ -19,3 +19,5 @@ services:
 #        class: AppBundle\Controller\ArticleController
 #        calls: 
 #            - [setContainer, ["@service_container"]]
+#        arguments:
+            

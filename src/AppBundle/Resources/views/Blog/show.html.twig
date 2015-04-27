@@ -41,75 +41,41 @@
     {% endif %}  
     <p>Number of actual urls in database for {{ blog.nom }} : {{ article_count }}</p>
     
-    
-    {#<h4>You have collected {{ urls_count }} urls for this blog. Date : {{ blog.getUrlListDate()|date('d-m-Y') }}</h4>
-    {% if urls_count != 0 %}
-        <div class="panel panel-default">
-            <div class="panel-heading" role="tab" id="headingOne">            
-                <a data-toggle="collapse" data-parent="#accordion" href="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
-                    Show urls
-                </a>
-            </div>
-            <div id="collapseOne" class="panel-collapse collapse" role="tabpanel" aria-labelledby="headingOne">
-                <div class="panel-body">
-                    <table class="table table-hover">
-                        <tr>
-                            <th>Url</th>
-                            <th>Delete</th>
-                        </tr>
-                        {% for url in urls %}
-                            <tr>
-                                <td>{{ url }}</td>
-                                <td><a href="{{ path('blog_delete_url', {'id': blog.id, 'key': loop.index0 }) }}">X</a></td>
-                            </tr>
-                        {% endfor %}
-                    </table>
-                </div>
-            </div>
-        </div>
-    {% endif %}#}
-    
-{#    {% if process_report %}
-        <p>Links followed: {{ process_report.links_followed }}</p>
-        <p>Documents received: {{ process_report.files_received }}</p>
-        <p>Bytes received: {{ process_report.bytes_received }} bytes.</p>
-        <p>Process runtime: {{ process_report.process_runtime }} sec.</p>
-    {% endif %}#}
-
-{#    <a href="{{ path('blog') }}">Retour à la liste</a><br/>#}
-{#    <a href="{{ path('blog_edit', {'id': entity.id}) }}">Modifier</a>#}
-
 {#    {{ form(delete_form) }}#}
     <a href="{{ path('article', {'blog_id': blog.id}) }}">Articles</a><br/>
 
     <h3>Actions</h3>
     <a href="{{ path('blog_crawl_param_edit', {'id': blog.id}) }}">1. Crawler settings and testing</a><br/>
-{#    <a id="btn_get_urls" href="">Show saved urls</a><br/>#}
-    <a href="{{ path('article_crawl_results', {'blog_id': blog.id}) }}">2. Get url and html sources (full crawl)</a><br/>
-{#    {% if urls_count != 0 %}
-        <a href="{{ path('article_index', {'blog_id': blog.id}) }}">3. Fetch related content</a><br/>
-    {% endif %}#}
-{#    <div id="show_urls">
-        {% if urls %}
-            {% for url in urls %}
-                {{ url }}<br/>
-            {% endfor %}
-        {% endif %}
-    </div> #}
+    <a id="link_crawl" href="{{ path('article_crawl_results', {'blog_id': blog.id}) }}">2. Get url and html sources (full crawl)</a><br/>
+{#    <a id="link_crawl" href="#">Test</a>#}
+    {# Contient la réponse Ajax #}
+    <div id="response"></div>
     
-    <script type="text/javascript">
-        $(document).ready(function(){            
+    <script type="text/javascript">        
+       
+        
+              
+        $(document).ready(function(){ 
+            var url = "{{ path('check_articles', {'blog_id': blog.id}) }}";
             
-            {#$("#show_urls").hide();
-            
-            // Affichage des urls actuellement stockées
-            $('#btn_get_urls').click(function(event){
-                event.preventDefault();
-                
-                $("#show_urls").toggle("slow");
-                return false;
-            });#}
+            $("#link_crawl").click(function(){  
+                function poll(){
+                    setTimeout(function(){
+                        $.ajax({
+                            url: url,
+                            success: function(response){
+                                $("#response").html($.parseJson(response));
+                                poll();
+                            }
+                        });
+                    }, 2000);
+                }
+            });            
         });
+        
+        
+        
+        
     </script>
     
 {% endblock %}

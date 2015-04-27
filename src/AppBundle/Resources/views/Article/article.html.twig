@@ -11,6 +11,7 @@
             <tr>
                 <th>Id</th>
                 <th>Url</th>
+                <th>Origin</th>
                 <th>Delete</th>
             </tr>
             {% for article in articles %}
@@ -20,6 +21,9 @@
                     </td>
                     <td>
                         <a href="{{ path('article_show', {'id': article.id, 'blog_id': blog.id}) }}" title="Article Details">{{ article.url }}</a>
+                    </td>
+                    <td>
+                        <a target="_blank" href="{{ article.url }}" title="Source page">Show</a>
                     </td>
                     <td>
                         <a href="{{ path('article_delete', {'id': article.id, 'blog_id': blog.id}) }}" title="Delete">X</a>

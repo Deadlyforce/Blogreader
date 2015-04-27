@@ -78,13 +78,15 @@ class MyCrawler extends PHPCrawler{
 
                 $this->em->persist($article);
                 $this->em->flush();
+                
+                echo $page_url.'<br/>'; 
+                flush(); 
+                                
             }else{
-                // Tests
+                // Tests ($status == 0)
                 $this->result[] = $page_url;
                 $this->content[] = $pageInfo->content;
-            }
-            
-            flush();            
+            }                               
         }      
     }    
 }

@@ -12,6 +12,7 @@ use AppBundle\Form\ArticleType;
 
 use Symfony\Component\Process\Process;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\JsonResponse;
 
 use PHPCrawlerUrlCacheTypes;
 //use Symfony\Component\HttpFoundation\JsonResponse;
@@ -48,70 +49,7 @@ class ArticleController extends Controller
             'blog' => $blog
         );
     }
-    
-    /**
-     * Long poll. Checks the articles in database for a blog. Returned to Ajax call in showAction when crawling.
-     * 
-     * @param int $blog_id Blog id
-     * @Route("/articles/{blog_id}/check/", name="articles_check")
-     * @Template()
-     */
-    public function checkArticlesAction($blog_id)
-    {
-        // where does the data come from ? In real world this would be a SQL query or something
-        $em = $this->getDoctrine()->getManager();
-//        $articles = $em->getRepository('AppBundle:Article')->findBy(array('blog' => $blog_id));        
-        $articles = 'youpi';
-        
-        return array(
-            'json' => $articles
-        );
-        
-//        $data_source = $articles;
-//        $data_source_timestamp = time();
-//        
-//        // main loop
-//        while(true){
-//
-//            // if ajax request has send a timestamp, then $last_ajax_call = timestamp, else $last_ajax_call = null
-//            $last_ajax_call = isset($_GET['timestamp']) ? (int)$_GET['timestamp'] : null;
-//
-//            // PHP caches file data, like requesting the size of a file, by default. clearstatcache() clears that cache
-//            clearstatcache();
-//            
-//            // get timestamp of when file has been changed the last time
-//            $last_change_in_data_file = $data_source_timestamp;
-//
-//            // if no timestamp delivered via ajax or data.txt has been changed SINCE last ajax timestamp
-//            if ($last_ajax_call == null || $last_change_in_data_file > $last_ajax_call) {
-//
-//                // get content of data.txt
-//                $data = $data_source;
-//
-//                // put data.txt's content and timestamp of last data.txt change into array
-//                $result = array(
-//                    'data_from_file' => $data,
-//                    'timestamp' => $last_change_in_data_file
-//                );
-//
-//                // encode to JSON, render the result (for AJAX)
-//                $json = json_encode($result);
-//                
-//                return array(
-//                    'json' =>$json
-//                );
-//
-//                // leave this loop step
-//                break;
-//
-//            } else {
-//                // wait for 1 sec (not very sexy as this blocks the PHP/Apache process, but that's how it goes)
-//                sleep( 1 );
-//                continue;
-//            }
-//        }
-    }
-    
+            
     /**
      * Creates a new Article entity.
      *
@@ -178,10 +116,12 @@ class ArticleController extends Controller
     }
 
     /**
-     * Finds and displays a Article entity.
+     * Finds and displays an Article entity.
      *
      * @Route("/{id}/{blog_id}/show", name="article_show")
      * @Method("GET")
+     * @param int $id Article id
+     * @param int $blog_id Blog id
      * @Template()
      */
     public function showAction($id, $blog_id)
@@ -376,59 +316,21 @@ class ArticleController extends Controller
                         
         $status = 1;        
         $cmd = 'php ../app/console article:crawl'.' '.$blog_id.' '.$status.' '.$requestLimit;
-        $process =  new Process($cmd);
         
-//        $process->run(function($type, $buffer){
-//            if('err' == $type){
-//                echo 'ERR > '.$buffer;
-//            }else{
-//                echo 'OUT > '.$buffer;                
-//            }
-//        });       
-
-        $logger = $this->get('logger');
-        $logger->info('lancement du process depuis le controller');
-        $process->start();
+        // IMPORTANT !! AJOUTER CONDITION AVEC INSTRUCTION EQUIVALENTE POUR LINUX
         
-//        sleep(1);
+        $command = "start /B ".$cmd." > NUL 2>&1";
         
-//        // check for errors and output them through flashbag
-//        if (!$process->isRunning()){
-//            if (!$process->isSuccessful()){
-//                $this->get('session')->getFlashBag()->add('error', "Oops! The process fininished with an error:".$process->getErrorOutput());
-//            }
-//        }
-        while($process->isRunning()){            
-            echo $process->getIncrementalOutput();
-        }
+        $process =  new Process($command);
+        $process->run();    
+        
         
         // Sauvegarde du rapport de crawl
 //        $this->saveReportAction($blog_id, $crawlReport);
         
+ 
 //        return $this->redirectToRoute('article', array('blog_id' => $blog_id));  
-    }
-    
-    /**
-     * Retourne les urls des articles actuellement en base
-     * 
-     * @param int $blog_id Blog Id
-     * @return Response
-     * 
-     * @Route("/{blog_id}/check_articles", name="check_articles")
-     */
-    public function ajaxCheckArticlesAction($blog_id)
-    {
-        $em = $this->getDoctrine()->getManager();
-        $articles = $em->getRepository('AppBundle:Article')->findBy(array('blog' => $blog_id));
-        
-        foreach($articles as $article){
-            $urls[] = $article->url;
-        }
-        
-        $json_urls = json_encode($urls);
-        
-        return new Response($json_urls);
-    }
+    }    
     
     /**
      * Saves the crawler report
@@ -436,27 +338,27 @@ class ArticleController extends Controller
      * @param int $id Blog id
      * @param array $crawlReport Crawler Stats
      */
-    public function saveReportAction($id, $crawlReport)
-    {
-        $em = $this->getDoctrine()->getManager();
-        $blog = $em->getRepository('AppBundle:Blog')->find($id);
-        
-        // Date actuelle
-        $date = new \DateTime('', new \DateTimeZone('Europe/Paris')); 
-        
-        $process_report = $crawlReport['process_report'];
-        
-        // Enregistrement du process_report dans Blog
-        $blog->setLinksFollowed($process_report->links_followed);
-        $blog->setDocsReceived($process_report->files_received);
-        $blog->setProcessRuntime($process_report->process_runtime);
-        $blog->setBytesReceived($process_report->bytes_received);
-        
-        $blog->setLastCrawlDate($date);
-          
-        $em->persist($blog);
-        $em->flush();
-    }
+//    public function saveReportAction($id, $crawlReport)
+//    {
+//        $em = $this->getDoctrine()->getManager();
+//        $blog = $em->getRepository('AppBundle:Blog')->find($id);
+//        
+//        // Date actuelle
+//        $date = new \DateTime('', new \DateTimeZone('Europe/Paris')); 
+//        
+//        $process_report = $crawlReport['process_report'];
+//        
+//        // Enregistrement du process_report dans Blog
+//        $blog->setLinksFollowed($process_report->links_followed);
+//        $blog->setDocsReceived($process_report->files_received);
+//        $blog->setProcessRuntime($process_report->process_runtime);
+//        $blog->setBytesReceived($process_report->bytes_received);
+//        
+//        $blog->setLastCrawlDate($date);
+//          
+//        $em->persist($blog);
+//        $em->flush();
+//    }
         
     /**
      * Parcours le site concerné

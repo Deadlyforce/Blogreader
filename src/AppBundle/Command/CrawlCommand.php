@@ -32,13 +32,7 @@ class CrawlCommand extends ContainerAwareCommand
         $blog_id = $input->getArgument('blog_id');
         $status = $input->getArgument('status');
         $requestLimit = $input->getArgument('requestLimit');
-        
-//        $this->forward('app.article_controller:crawlAction', array(
-//            'blog_id' => $blog_id,
-//            'status' => $status,
-//            'requestLimit' => $requestLimit
-//                ));
-        
+       
         // Récupérer l'url de l'entité avec l'id de l'entité blog
         $em = $this->getContainer()->get('Doctrine')->getManager();
         $blog = $em->getRepository('AppBundle:Blog')->find($blog_id);        
@@ -57,8 +51,8 @@ class CrawlCommand extends ContainerAwareCommand
         // Détermine si il s'agit d'un crawl final (toutes url + sauvegarde et donc valeur 1) ou d'un test (valeur 0)
         $crawl->status = $status;
         // Passe l'entity manager au service
-        $crawl->em = $em;
-        
+        $crawl->em = $em;       
+       
         // Sets the target url
         $crawl->setURL($url);
         
@@ -108,26 +102,51 @@ class CrawlCommand extends ContainerAwareCommand
       
         $crawl->go();
 
-        // Récupération des urls
+        // TESTCRAWL : Récupération des urls (variables vides lors du crawl complet)
         $urls = $crawl->result;
         $contents = $crawl->content;
         
-        // Dépile la première valeur du résultat qui est l'url de la homepage. Non souhaitée.
+        // TESTCRAWL : Dépile la première valeur du résultat qui est l'url de la homepage. Non souhaitée.
         array_shift($urls);
         array_shift($contents);
         
-        $process_report = $crawl->getProcessReport();       
+        $process_report = $crawl->getProcessReport();  
+        
+        // Sauvegarde du rapport de crawl
+        $this->saveReportAction($blog_id, $process_report);
 
         return array(
             'urls' => $urls,
             'contents' => $contents,
             'process_report' => $process_report
-        );
+        );                
         
+    }
+    
+    /**
+     * Saves the crawler report
+     * 
+     * @param int $blog_id Blog id
+     * @param array $process_report Crawler Stats
+     */
+    public function saveReportAction($blog_id, $process_report)
+    {
+        $em = $this->getContainer()->get('Doctrine')->getManager();
+        $blog = $em->getRepository('AppBundle:Blog')->find($blog_id);
         
+        // Date actuelle
+        $date = new \DateTime('', new \DateTimeZone('Europe/Paris')); 
+                        
+        // Enregistrement du process_report dans Blog
+        $blog->setLinksFollowed($process_report->links_followed);
+        $blog->setDocsReceived($process_report->files_received);
+        $blog->setProcessRuntime($process_report->process_runtime);
+        $blog->setBytesReceived($process_report->bytes_received);
         
-        sleep(2);
-        $logger->info('Fin de l\'exécution de la commande');
+        $blog->setLastCrawlDate($date);
+          
+        $em->persist($blog);
+        $em->flush();
     }
     
     /**

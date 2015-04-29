@@ -25,7 +25,8 @@
         "mmerian/phpcrawl": "dev-master",
         "symfony/serializer": "2.7.*@dev",
         "knplabs/knp-menu-bundle": "~2",
-        "symfony/dom-crawler": "3.0.*@dev"
+        "symfony/dom-crawler": "3.0.*@dev"       
+
     },
     "require-dev": {
         "sensio/generator-bundle": "~2.3"

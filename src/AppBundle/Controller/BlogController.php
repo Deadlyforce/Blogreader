@@ -230,10 +230,20 @@ class BlogController extends Controller
      *
      * @Route("/{id}", name="blog_show")
      * @Method("GET")
+     * @param int $id Blog id
      * @Template()
      */
     public function showAction($id)
     {           
+        // Efface le log du précédent crawl s'il existe dans le dossier log
+        $logPath = dirname(dirname(dirname(__DIR__))).'/web/logs';
+        $resultArray = glob($logPath ."/crawl_log_for_blogId_". $id ."_*.txt");
+        
+        if(!empty($resultArray)){
+            unlink($resultArray[0]);
+        }
+        // Efface le log FIN
+        
         $em = $this->getDoctrine()->getManager();
         $blog = $em->getRepository('AppBundle:Blog')->find($id);
         $article = $em->getRepository('AppBundle:Article')->findBy(array('blog' => $id));

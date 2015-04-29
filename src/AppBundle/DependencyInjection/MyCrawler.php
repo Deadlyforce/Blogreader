@@ -45,8 +45,10 @@ class MyCrawler extends PHPCrawler{
     {        
         $page_url = $pageInfo->url;        
         $source = $pageInfo->source;
-        $status = $pageInfo->http_status_code;        
+        $status = $pageInfo->http_status_code;                    
         
+        $logPath = dirname(dirname(dirname(__DIR__))).'/web/logs';
+
         
         // Si page "OK" (pas de code erreur) et non vide, affiche l'url
         if($status == 200 && $source!='')
@@ -65,7 +67,7 @@ class MyCrawler extends PHPCrawler{
             if($this->status == 1 && $this->counter > 1){
                 // Crawl complet
                 $blog = $this->em->getRepository('AppBundle:Blog')->find($this->blog_id);
-                
+               
                 $article = new Article();
                 
                 // Date actuelle
@@ -78,6 +80,24 @@ class MyCrawler extends PHPCrawler{
 
                 $this->em->persist($article);
                 $this->em->flush();
+                
+                // Enregistrement d'un log *************************************                 
+                // Création du fichier log                
+                $file = glob($logPath ."/". "*" . $this->crawler_uniqid . ".txt");               
+               
+                if(empty($file)){
+              
+                    $logFile = $logPath. '/crawl_log_for_blogId_' . $this->blog_id .'_'. date("Y_m_d_G_i_s") . '_ID_' . $this->crawler_uniqid . '.txt';   
+                    // Ouverture du fichier
+                    $log = fopen($logFile, 'c');
+                    // Ecriture
+                    fwrite($log, $page_url . "\n");
+                    fclose($log);
+                }else{                            
+                    file_put_contents($file[0], $page_url . "\n", FILE_APPEND); 
+                }
+                // NOTE : Le fichier log est détruit lors du passage sur l'affichage du blog (blog_show)
+                // Enregistrement d'un log FIN *********************************
                 
                 echo $page_url.'<br/>'; 
                 flush(); 

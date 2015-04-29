@@ -47,34 +47,10 @@
     <h3>Actions</h3>
     <a href="{{ path('blog_crawl_param_edit', {'id': blog.id}) }}">1. Crawler settings and testing</a><br/>
     <a id="link_crawl" href="{{ path('article_crawl_results', {'blog_id': blog.id}) }}">2. Get url and html sources (full crawl)</a><br/>
-{#    <a id="link_crawl" href="#">Test</a>#}
-    {# Contient la réponse Ajax #}
-    <div id="response"></div>
-    
-    <script type="text/javascript">        
+
+        
+    <script type="text/javascript">         
        
-        
-              
-        $(document).ready(function(){ 
-            var url = "{{ path('check_articles', {'blog_id': blog.id}) }}";
-            
-            $("#link_crawl").click(function(){  
-                function poll(){
-                    setTimeout(function(){
-                        $.ajax({
-                            url: url,
-                            success: function(response){
-                                $("#response").html($.parseJson(response));
-                                poll();
-                            }
-                        });
-                    }, 2000);
-                }
-            });            
-        });
-        
-        
-        
         
     </script>
     

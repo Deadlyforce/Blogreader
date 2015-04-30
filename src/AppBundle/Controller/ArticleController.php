@@ -297,7 +297,8 @@ class ArticleController extends Controller
         // Vérif si déjà des articles en base
         $em = $this->getDoctrine()->getManager();
         $articles = $em->getRepository('AppBundle:Article')->findBy(array('blog' => $blog_id));
-
+        $blog = $em->getRepository('AppBundle:Blog')->find($blog_id);
+        
         if($articles){
             // Vidange de tous les articles avant de récupérer à nouveau un stock
             foreach($articles as $article){
@@ -311,59 +312,90 @@ class ArticleController extends Controller
         
         ini_set('memory_limit', '256M');
         
-        // crawl
-//        $crawlReport = $this->crawlAction($blog_id, $status = 1, $requestLimit); 
+        // crawl report is now saved in the command
                         
         $status = 1;        
         $cmd = 'php ../app/console article:crawl'.' '.$blog_id.' '.$status.' '.$requestLimit;
         
-        // IMPORTANT !! AJOUTER CONDITION AVEC INSTRUCTION EQUIVALENTE POUR LINUX
-        
-        $command = "start /B ".$cmd." > NUL 2>&1";
+        // CONDITION AVEC INSTRUCTION EQUIVALENTE POUR LINUX
+        if(strtoupper(substr(PHP_OS, 0, 3)) === 'WIN'){
+            $command = "start /B ".$cmd." > NUL 2>&1";
+        }else{
+            $command = "nohup " . $cmd." > /dev/null 2>&1 &";
+        }
         
         $process =  new Process($command);
-        $process->run();    
+        $process->run();          
+        sleep(1);
         
+        return array(
+            "blog" => $blog
+        );
         
-        // Sauvegarde du rapport de crawl
-//        $this->saveReportAction($blog_id, $crawlReport);
-        
- 
 //        return $this->redirectToRoute('article', array('blog_id' => $blog_id));  
     }    
-    
+   
     /**
-     * Saves the crawler report
+     * Gets the log file (within logs folder) and returns its results
      * 
-     * @param int $id Blog id
-     * @param array $crawlReport Crawler Stats
+     * @param int $blog_id Blog id
+     * @Route("/{blog_id}/ajax_polling", name="ajax_polling")
+     * @Template()
      */
-//    public function saveReportAction($id, $crawlReport)
-//    {
-//        $em = $this->getDoctrine()->getManager();
-//        $blog = $em->getRepository('AppBundle:Blog')->find($id);
-//        
-//        // Date actuelle
-//        $date = new \DateTime('', new \DateTimeZone('Europe/Paris')); 
-//        
-//        $process_report = $crawlReport['process_report'];
-//        
-//        // Enregistrement du process_report dans Blog
-//        $blog->setLinksFollowed($process_report->links_followed);
-//        $blog->setDocsReceived($process_report->files_received);
-//        $blog->setProcessRuntime($process_report->process_runtime);
-//        $blog->setBytesReceived($process_report->bytes_received);
-//        
-//        $blog->setLastCrawlDate($date);
-//          
-//        $em->persist($blog);
-//        $em->flush();
-//    }
+    public function ajaxPollingAction($blog_id)
+    {               
+        $logPath = dirname(dirname(dirname(__DIR__))).'/web/logs';        
+        
+        // Attend 1s de façon répétée que le fichier log soit trouvé
+        while(empty(glob($logPath ."/crawl_log_for_blogId_". $blog_id ."_*.txt"))){
+            sleep(1);
+        }
+        
+        $resultArray = glob($logPath ."/crawl_log_for_blogId_". $blog_id ."_*.txt");        
+        $log_txt = $resultArray[0];
+        
+        while(true){
+            // if ajax request has sent a timestamp, then $last_ajax_call = timestamp, else $last_ajax_call = null
+            $last_ajax_call = isset($_GET['timestamp']) ? (int)$_GET['timestamp'] : null;
+            
+            // PHP caches file data, like requesting the size of a file, by default. clearstatcache() clears that cache
+            clearstatcache();
+            
+            // get timestamp of when file has been changed the last time
+            $last_change_in_data_file = filemtime($log_txt);
+            
+            // if no timestamp delivered via ajax or $log_txt has been changed SINCE last ajax timestamp
+            if($last_ajax_call == null || $last_change_in_data_file > $last_ajax_call){
+
+                // get content of data.txt
+                $data = file_get_contents($log_txt);
+
+                // return log_txt's content and timestamp of last log_txt change into array
+
+                return new JsonResponse(array(
+                    'data_from_file' => $data,
+                    'timestamp' => $last_change_in_data_file
+                )); 
+                
+                // leave this loop step
+                break;
+
+            }else{
+                // wait for 1 sec (not very sexy as this blocks the PHP/Apache process, but that's how it goes)
+                sleep(1);
+                continue;
+            }
+        }
+        
+//        return array(
+//            json_urls => $json_urls
+//        );
+    }
         
     /**
      * Parcours le site concerné
      * 
-     * @Route("/crawl/{id}/{status}/{requestLimit}", name="article_crawl")     
+     * @Route("/crawl/{id}/{status}/{requestLimit}", name="crawl_test")     
      * @Template()
      */
     public function crawlAction($id, $status = 1, $requestLimit)

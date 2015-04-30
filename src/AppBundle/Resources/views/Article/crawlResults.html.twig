@@ -2,10 +2,39 @@
 {% block title %}Blog crawler{% endblock %}
 
 {% block body %}
-{#    <h1>Résultat du crawler pour {{ blog.nom }}</h1>#}
+    <h3>Résultat du crawler pour {{ blog.nom }}</h3>
+    <a href="{{ path('blog_show', {"id": blog.id}) }}">Back to the {{ blog.nom }} blog page</a><br/>
     
-{#    {% for url in urls %}
-        {{ url }}<br/>       
-    {% endfor %}#}    
+    <div id="response"></div>
         
+    <script type="text/javascript">
+        
+        function getContent(timestamp){
+            
+            var queryString = {'timestamp' : timestamp};           
+            var url = "{{ path("ajax_polling",{"blog_id": blog.id}) }}";
+            
+            $.ajax(
+                {
+                    type: 'GET',
+                    url: url,
+                    data: queryString,
+                    success: function(response){                        
+                        // Remplacement des espaces 
+                        str = response.data_from_file;
+                        data = str.replace(/\s/g, "<br/>");
+                        // Affichage
+                        $('#response').html(data);
+                        // call the function again, this time with the timestamp we just got from server.php
+                        getContent(response.timestamp);
+                    }
+                }
+            );
+        }
+        
+        $(document).ready(function(){
+            getContent();
+        });
+        
+    </script>
 {% endblock %}

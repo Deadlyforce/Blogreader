@@ -98,9 +98,9 @@ class MyCrawler extends PHPCrawler{
                 }
                 // NOTE : Le fichier log est détruit lors du passage sur l'affichage du blog (blog_show)
                 // Enregistrement d'un log FIN *********************************
-                
-                echo $page_url.'<br/>'; 
-                flush(); 
+//                
+//                echo $page_url.'<br/>'; 
+//                flush(); 
                                 
             }else{
                 // Tests ($status == 0)

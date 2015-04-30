@@ -240,7 +240,9 @@ class BlogController extends Controller
         $resultArray = glob($logPath ."/crawl_log_for_blogId_". $id ."_*.txt");
         
         if(!empty($resultArray)){
-            unlink($resultArray[0]);
+            foreach($resultArray as $result){
+                unlink($result);
+            }
         }
         // Efface le log FIN
         

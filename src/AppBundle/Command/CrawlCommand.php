@@ -112,15 +112,18 @@ class CrawlCommand extends ContainerAwareCommand
         
         $process_report = $crawl->getProcessReport();  
         
-        // Sauvegarde du rapport de crawl
-        $this->saveReportAction($blog_id, $process_report);
-
-        return array(
-            'urls' => $urls,
-            'contents' => $contents,
-            'process_report' => $process_report
-        );                
+        // Sauvegarde du rapport de crawl si on fait un crawl complet uniquement - Si test pas de sauvegarde de rapport
+        if($status == 1){
+            $this->saveReportAction($blog_id, $process_report);
+        }
         
+        $output->writeln($urls);     
+        
+//        return array(
+//            'urls' => $urls,
+//            'contents' => $contents,
+//            'process_report' => $process_report
+//        );               
     }
     
     /**

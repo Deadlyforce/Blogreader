@@ -4,6 +4,8 @@
 {% block body -%}
     <h1>Crawler parameters for {{ blog.nom }}</h1>
     
+    <a href="{{ path('blog_show', {"id": blog.id}) }}">Back to the {{ blog.nom }} blog page</a><br/><br/>
+    
 {#    {{ form(paramForm) }}#}
 
     {{ form_start(paramForm, { 'attr': {'id': 'paramForm'}}) }}
@@ -66,7 +68,7 @@
                 
                 var requestLimit = $('#blogParam_request_limit').val(); 
                 var status = 0;
-                var url = "{{ path('crawl_test', {'id': blog.id, 'status': 'status', 'requestLimit': 'requestLimit'}) }}";
+                var url = "{{ path('crawl_test', {'blog_id': blog.id, 'status': 'status', 'requestLimit': 'requestLimit'}) }}";
                 url = url.replace("requestLimit", requestLimit);
                 url = url.replace("status", status);
                 
@@ -75,6 +77,8 @@
                     url: url,                   
                     cache: false,                    
                     success: function(response){
+console.log(response);
+{#                        data = response.replace(/\s/g, "<br/>");#}
                         $('#crawl_results').html(response);
                         $(".loading").hide();
                     }

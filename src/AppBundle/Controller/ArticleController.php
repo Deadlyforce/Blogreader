@@ -294,18 +294,12 @@ class ArticleController extends Controller
      */
     public function crawlResultsAction($blog_id)
     {
-        // Vérif si déjà des articles en base
+        
         $em = $this->getDoctrine()->getManager();
-        $articles = $em->getRepository('AppBundle:Article')->findBy(array('blog' => $blog_id));
         $blog = $em->getRepository('AppBundle:Blog')->find($blog_id);
         
-        if($articles){
-            // Vidange de tous les articles avant de récupérer à nouveau un stock
-            foreach($articles as $article){
-                $em->remove($article);
-                $em->flush();
-            }
-        }
+        // Efface les articles existants pour ce blog
+        $this->deleteBlogArticles($blog_id);
         
         // Request Limit à 0 pour crawler la totalité des url du site après réglages
         $requestLimit = 50;        
@@ -333,7 +327,27 @@ class ArticleController extends Controller
         );
         
 //        return $this->redirectToRoute('article', array('blog_id' => $blog_id));  
-    }    
+    } 
+    
+    /**
+     * Deletes all the articles from a specific blog
+     * 
+     * @param int $blog_id Blog id
+     */
+    public function deleteBlogArticles($blog_id)
+    {
+        // Vérif si déjà des articles en base
+        $em = $this->getDoctrine()->getManager();
+        $articles = $em->getRepository('AppBundle:Article')->findBy(array('blog' => $blog_id));        
+        
+        if($articles){
+            // Vidange de tous les articles avant de récupérer à nouveau un stock
+            foreach($articles as $article){
+                $em->remove($article);
+                $em->flush();
+            }
+        }
+    }
    
     /**
      * Gets the log file (within logs folder) and returns its results
@@ -386,103 +400,32 @@ class ArticleController extends Controller
                 continue;
             }
         }
-        
-//        return array(
-//            json_urls => $json_urls
-//        );
     }
         
     /**
      * Parcours le site concerné
      * 
-     * @Route("/crawl/{id}/{status}/{requestLimit}", name="crawl_test")     
+     * @Route("/crawl/{blog_id}/{status}/{requestLimit}", name="crawl_test")     
      * @Template()
+     * @param int $blog_id Blog id
+     * @param int $requestLimit number of urls to crawl (fullcrawl = 0, user defined = testcrawl)
+     * @param int $status Used in the crawl process status = 1 default, status = 0 testcrawl
      */
-    public function crawlAction($id, $status = 1, $requestLimit)
+    public function crawlTestAction($blog_id, $requestLimit, $status = 1)
     {   
-        // Récupérer l'url de l'entité avec l'id de l'entité blog
-        $em = $this->getDoctrine()->getManager();
-        $blog = $em->getRepository('AppBundle:Blog')->find($id);        
-               
-        if(!$blog){
-            throw $this->createNotFoundException('Impossible de trouver l\'entité blog demandée');            
-        }
         
-        $url = $blog->getUrl();
+        $cmd = 'php ../app/console article:crawl'.' '.$blog_id.' '.$status.' '.$requestLimit;
         
-        // Au lieu de créer une instance de la classe MyCrawler, je l'appelle en tant que service (config.yml)
-        $crawl = $this->get('my_crawler');
+        $process =  new Process($cmd);
+        $process->run(); 
         
-        // Passe l'id du blog au crawler et le statut de la requête (test ou final)
-        $crawl->blog_id = $id;
-        // Détermine si il s'agit d'un crawl final (toutes url + sauvegarde et donc valeur 1) ou d'un test (valeur 0)
-        $crawl->status = $status;
-        // Passe l'entity manager au service
-        $crawl->em = $em;
-        
-        // Sets the target url
-        $crawl->setURL($url);
-        
-        // Spidering huge websites : activates the SQLite-cache 
-        $crawl->setUrlCacheType(PHPCrawlerUrlCacheTypes::URLCACHE_SQLITE);
-        
-        // Analyse la balise content-type du document, autorise les pages de type text/html
-        $crawl->addContentTypeReceiveRule("#text/html#"); 
-        
-        // Filter Rules
-        $url_excluded_words = $blog->getUrlExcludedWords();
-        $url_excluded_endwords = $blog->getUrlExcludedEndWords();
-        $url_excluded_date = $blog->getUrlExcludedDate();
-        $url_excluded_year = $blog->getUrlExcludedYear();
-        
-        $this->addURLFilterRules($crawl, $url_excluded_words, $url_excluded_endwords, $url_excluded_date, $url_excluded_year);
-        // Filter Rules End
-        
-        $crawl->enableCookieHandling(TRUE);
-        
-        // Sets a limit to the number of bytes the crawler should receive alltogether during crawling-process.
-        $crawl->setTrafficLimit(0);
-        
-        // Sets a limit to the total number of requests the crawler should execute.
-        $crawl->setRequestLimit($requestLimit);
-        
-        // Sets the content-size-limit for content the crawler should receive from documents.
-        $crawl->setContentSizeLimit(0);
-        
-        // 2 - The crawler will only follow links that lead to the same host like the one in the root-url.
-        // E.g. if the root-url (setURL()) is "http://www.foo.com", the crawler will ONLY follow links to "http://www.foo.com/...", but not
-        // to "http://bar.foo.com/..." and "http://www.another-domain.com/...". This is the default mode.
-        $crawl->setFollowMode(2);
-        
-        // Sets the timeout in seconds for waiting for data on an established server-connection.
-        $crawl->setStreamTimeout(20);
-        
-        // Sets the timeout in seconds for connection tries to hosting webservers.
-        $crawl->setConnectionTimeout(20);
-        
-        // For instance: If the maximum depth is set to 1, the crawler only will follow links found in the entry-page
-        // of the crawling-process, but won't follow any further links found in underlying documents.
-//        $crawl->setCrawlingDepthLimit(3);
-        
-        $crawl->obeyRobotsTxt(TRUE);
-        $crawl->setUserAgentString("Mozilla/5.0 (Windows NT 6.3; rv:36.0) Gecko/20100101 Firefox/36.0");
-      
-        $crawl->go();
-
-        // Récupération des urls
-        $urls = $crawl->result;
-        $contents = $crawl->content;
-        
-        // Dépile la première valeur du résultat qui est l'url de la homepage. Non souhaitée.
-        array_shift($urls);
-        array_shift($contents);
-        
-        $process_report = $crawl->getProcessReport();       
+        $output = $process->getOutput();
+        $tab = str_replace("\r\n"," ",$output); // Suppression des sauts de ligne
+        $urls = explode(" ", $tab);
 
         return array(
             'urls' => $urls,
-            'contents' => $contents,
-            'process_report' => $process_report
+//            'process_report' => $tab['process_report']
         );
     }
     

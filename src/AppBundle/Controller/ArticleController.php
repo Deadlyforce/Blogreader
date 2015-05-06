@@ -15,6 +15,7 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\JsonResponse;
 
 use PHPCrawlerUrlCacheTypes;
+use Symfony\Component\DomCrawler\Crawler;
 //use Symfony\Component\HttpFoundation\JsonResponse;
 
 
@@ -25,6 +26,60 @@ use PHPCrawlerUrlCacheTypes;
  */
 class ArticleController extends Controller
 {
+    /**
+     * Find and sort dates from all the articles for a Blog
+     * 
+     * @Route("/{blog_id}/sort_dates", name="sort_dates")
+     * @param int $blog_id Blog id
+     * @template()
+     */
+    public function sortDatesAction($blog_id)
+    {
+        $em = $this->getDoctrine()->getManager();
+        $articles = $em->getRepository("AppBundle:Article")->findBy(array("blog" => $blog_id));
+       
+        foreach($articles as $article){
+        
+            $crawler = new Crawler($article->getSource());       
+
+            // recherche de la balise <meta property="article:published_time" content="2007-09-19T09:12:23+00:00" />
+            $crawler_meta = $crawler->filter('meta')->reduce(function(Crawler $node, $i){
+                return $node->attr('property') === "article:published_time"; // Tout les noeuds qui retournent false sont éliminés
+            });
+            
+            // Si la balise meta spécifique est trouvée
+            if($crawler_meta->count() != 0){
+                $time = $crawler_meta->attr('content');  
+                $date = new \DateTime($time);
+            }else{
+                // Recherche de la balise html5 <time>
+                $crawler_time = $crawler->filter('time')->reduce(function(Crawler $node, $i){
+                    return ($node->attr('class') == "entry-date" || $node->attr('class') == "entry-date published");
+                }); 
+                        
+                if($crawler_time->count() != 0){
+                    $crawler_time->first()->attr('datetime');
+                    $date = new \DateTime($time);
+                }else{
+                    // Recherche de la balise <abbr>
+                    $crawler_abbr = $crawler->filter('abbr');
+                    if($crawler_abbr->count() != 0){
+                        $time = $crawler_abbr->attr('title');
+                        $date = new \DateTime($time);
+                    }
+                }                                
+            }
+            
+            if($date){
+                $article->setDate($date);    
+                $em->persist($article);
+                $em->flush();
+            }        
+        }
+        
+        return $this->redirectToRoute("article", array('blog_id' => $blog_id));
+        
+    }
     
     /**
      * Index de tous les articles liés à un blog
@@ -36,7 +91,7 @@ class ArticleController extends Controller
     public function articleAction($blog_id)
     {
         $em = $this->getDoctrine()->getManager();
-        $articles = $em->getRepository('AppBundle:Article')->findBy(array('blog' => $blog_id));
+        $articles = $em->getRepository('AppBundle:Article')->findBy(array('blog' => $blog_id), array('date' => 'DESC'));
        
         $blog = $em->getRepository('AppBundle:Blog')->find($blog_id);
        
@@ -299,10 +354,10 @@ class ArticleController extends Controller
         $blog = $em->getRepository('AppBundle:Blog')->find($blog_id);
         
         // Efface les articles existants pour ce blog
-        $this->deleteBlogArticles($blog_id);
+        $this->deleteBlogArticlesAction($blog_id);
         
         // Request Limit à 0 pour crawler la totalité des url du site après réglages
-        $requestLimit = 50;        
+        $requestLimit = 0;        
         
         ini_set('memory_limit', '256M');
         
@@ -319,6 +374,7 @@ class ArticleController extends Controller
         }
         
         $process =  new Process($command);
+        $process->disableOutput();
         $process->run();          
         sleep(1);
         
@@ -333,8 +389,10 @@ class ArticleController extends Controller
      * Deletes all the articles from a specific blog
      * 
      * @param int $blog_id Blog id
+     * @Route("/{blog_id}/articles_delete", name="articles_delete")
+     * @Template()
      */
-    public function deleteBlogArticles($blog_id)
+    public function deleteBlogArticlesAction($blog_id)
     {
         // Vérif si déjà des articles en base
         $em = $this->getDoctrine()->getManager();
@@ -347,6 +405,10 @@ class ArticleController extends Controller
                 $em->flush();
             }
         }
+        
+        return array(
+            'message' => 'Articles delete success'
+        );
     }
    
     /**
@@ -421,7 +483,7 @@ class ArticleController extends Controller
         
         $output = $process->getOutput();
         $tab = str_replace("\r\n"," ",$output); // Suppression des sauts de ligne
-        $urls = explode(" ", $tab);
+        $urls = explode(" ", $tab); // Fabrication du tableau d'après un "string"
 
         return array(
             'urls' => $urls,

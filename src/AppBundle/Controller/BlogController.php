@@ -14,7 +14,6 @@ use AppBundle\Form\BlogParamType;
 use Symfony\Component\Serializer\Serializer;
 use Symfony\Component\Serializer\Encoder\JsonEncoder;
 use Symfony\Component\Serializer\Normalizer\GetSetMethodNormalizer;
-//use Symfony\Component\DomCrawler\Crawler;
 
 
 /**
@@ -228,7 +227,7 @@ class BlogController extends Controller
     /**
      * Finds and displays a Blog entity.
      *
-     * @Route("/{id}", name="blog_show")
+     * @Route("/{id}/show", name="blog_show")
      * @Method("GET")
      * @param int $id Blog id
      * @Template()

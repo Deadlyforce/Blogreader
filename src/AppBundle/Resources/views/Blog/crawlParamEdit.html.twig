@@ -4,6 +4,7 @@
 {% block body -%}
     <h1>Crawler parameters for {{ blog.nom }}</h1>
     
+    <a href="{{ path('article', {'blog_id': blog.id}) }}">Articles</a><br/>
     <a href="{{ path('blog_show', {"id": blog.id}) }}">Back to the {{ blog.nom }} blog page</a><br/><br/>
     
 {#    {{ form(paramForm) }}#}
@@ -77,8 +78,6 @@
                     url: url,                   
                     cache: false,                    
                     success: function(response){
-console.log(response);
-{#                        data = response.replace(/\s/g, "<br/>");#}
                         $('#crawl_results').html(response);
                         $(".loading").hide();
                     }

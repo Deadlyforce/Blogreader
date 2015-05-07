@@ -3,6 +3,7 @@
 
 {% block body %}
     <h3>Résultat du crawler pour {{ blog.nom }}</h3>
+    <a href="{{ path('article', {'blog_id': blog.id}) }}">Articles</a><br/>
     <a href="{{ path('blog_show', {"id": blog.id}) }}">Back to the {{ blog.nom }} blog page</a><br/>
     
     <div id="response"></div>

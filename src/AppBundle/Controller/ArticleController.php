@@ -38,8 +38,10 @@ class ArticleController extends Controller
         $em = $this->getDoctrine()->getManager();
         $articles = $em->getRepository("AppBundle:Article")->findBy(array("blog" => $blog_id));
        
+//        $batchSize = 20;
+//        $i = 1;
         foreach($articles as $article){
-        
+            
             $crawler = new Crawler($article->getSource());       
 
             // recherche de la balise <meta property="article:published_time" content="2007-09-19T09:12:23+00:00" />
@@ -68,13 +70,20 @@ class ArticleController extends Controller
                         $date = new \DateTime($time);
                     }
                 }                                
-            }
+            }                        
             
             if($date){
+//var_dump($date);
                 $article->setDate($date);    
-                $em->persist($article);
-                $em->flush();
-            }        
+//var_dump('Je persiste');
+//                if (($i % $batchSize) === 0) {
+//var_dump('Je flush');
+                    $em->flush();
+//                    $em->clear();
+//                }
+            } 
+            
+//            $i++;
         }
         
         return $this->redirectToRoute("article", array('blog_id' => $blog_id));
@@ -474,11 +483,12 @@ class ArticleController extends Controller
      * @param int $status Used in the crawl process status = 1 default, status = 0 testcrawl
      */
     public function crawlTestAction($blog_id, $requestLimit, $status = 1)
-    {   
-        
+    {                 
+        set_time_limit(14400); // 4h de délai d'éxecution du script
         $cmd = 'php ../app/console article:crawl'.' '.$blog_id.' '.$status.' '.$requestLimit;
         
         $process =  new Process($cmd);
+        $process->setTimeout(14400);
         $process->run(); 
         
         $output = $process->getOutput();

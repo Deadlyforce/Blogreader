@@ -38,8 +38,6 @@ class ArticleController extends Controller
         $em = $this->getDoctrine()->getManager();
         $articles = $em->getRepository("AppBundle:Article")->findBy(array("blog" => $blog_id));
        
-//        $batchSize = 20;
-//        $i = 1;
         foreach($articles as $article){
             
             $crawler = new Crawler($article->getSource());       
@@ -73,22 +71,27 @@ class ArticleController extends Controller
             }                        
             
             if($date){
-//var_dump($date);
-                $article->setDate($date);    
-//var_dump('Je persiste');
-//                if (($i % $batchSize) === 0) {
-//var_dump('Je flush');
-                    $em->flush();
-//                    $em->clear();
-//                }
+                $article->setDate($date); 
+                $em->flush();
             } 
-            
-//            $i++;
         }
         
         return $this->redirectToRoute("article", array('blog_id' => $blog_id));
         
     }
+    
+    
+    /**
+     * Extrait le contenu de l'article pour chaque url du blog
+     * 
+     * @param int $blog_id Blog id
+     */
+    public function sortContentAction($blog_id)
+    {
+        $em = $this->getDoctrine()->getManager();
+        $em->getRepository("AppBundle:Article")->findBy(array("blog" => $blog_id));
+    }
+    
     
     /**
      * Index de tous les articles liés à un blog

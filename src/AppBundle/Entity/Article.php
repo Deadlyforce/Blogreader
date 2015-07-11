@@ -9,8 +9,8 @@ use Symfony\Component\HttpFoundation\File\UploadedFile;
 
 /**
  * Article
- *
- * @ORM\Table(name="articles")
+ * 
+ * @ORM\Table(name="articles", indexes={@ORM\Index(name="blog_id_idx", columns={"blog_id"})})
  * @ORM\Entity(repositoryClass="AppBundle\Entity\ArticleRepository")
  */
 class Article

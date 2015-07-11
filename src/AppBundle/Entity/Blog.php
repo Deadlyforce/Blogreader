@@ -135,7 +135,7 @@ class Blog
      * 
      * @var int
      * 
-     * @ORM\Column(name="url_excluded_date", type="boolean")
+     * @ORM\Column(name="url_excluded_date", type="boolean", nullable=true)
      */
     private $url_excluded_date;
     
@@ -144,7 +144,7 @@ class Blog
      * 
      * @var int
      * 
-     * @ORM\Column(name="url_excluded_year", type="boolean")
+     * @ORM\Column(name="url_excluded_year", type="boolean", nullable=true)
      */
     private $url_excluded_year;
     
